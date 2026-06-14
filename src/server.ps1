@@ -160,8 +160,11 @@ Start-PodeServer -Browse:$Browse {
             }
             $count++
         }
-        $eng['Dirty'] = $true
-        Set-PodeState -Name 'eng' -Value $eng | Out-Null
+        # Only flag unsaved work if at least one policy actually matched.
+        if ($count) {
+            $eng['Dirty'] = $true
+            Set-PodeState -Name 'eng' -Value $eng | Out-Null
+        }
         Write-PodeJsonResponse -Value @{ ok=$true; count=$count; summary=(Get-EngagementSummary $eng) }
     }
 
@@ -178,6 +181,7 @@ Start-PodeServer -Browse:$Browse {
         $eng = Get-PodeState -Name 'eng'
         if (-not $eng) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
         $p = $eng.Project
+        $before = ($p | ConvertTo-Json -Compress -Depth 5)
         if ($null -ne $d.projectStart) { $p.Start = [string]$d.projectStart }
         if ($null -ne $d.projectEnd)   { $p.End   = [string]$d.projectEnd }
         if ($d.phase) {
@@ -189,9 +193,13 @@ Start-PodeServer -Browse:$Browse {
         }
         $phasesEmpty = -not ($p.Phases['1'].Start -or $p.Phases['2'].Start -or $p.Phases['3'].Start)
         if (($d.auto -or $phasesEmpty) -and $p.Start -and $p.End) { Invoke-AutoPhaseDistribution $eng }
-        $eng['Dirty'] = $true
-        Set-PodeState -Name 'eng' -Value $eng | Out-Null
-        Write-PodeJsonResponse -Value @{ ok=$true; project=$eng.Project }
+        # Only flag unsaved work if the schedule actually changed.
+        $changed = ($p | ConvertTo-Json -Compress -Depth 5) -ne $before
+        if ($changed) {
+            $eng['Dirty'] = $true
+            Set-PodeState -Name 'eng' -Value $eng | Out-Null
+        }
+        Write-PodeJsonResponse -Value @{ ok=$true; changed=$changed; project=$eng.Project }
     }
 
     # ---- devices: list ----

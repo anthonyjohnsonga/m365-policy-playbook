@@ -423,7 +423,7 @@ async function applyBulk(){
     targets.forEach(p => p.Status = value);
     if(r.summary) applySummary(r.summary);
     renderCards();
-    markDirty();
+    if(r.count) markDirty();   // skip the autosave if nothing actually matched
     toast(`Updated ${r.count} ${r.count===1?'policy':'policies'}`);
   }catch(e){ toast(e.message, true); }
 }
@@ -572,9 +572,9 @@ function wireTimeline(){
 
 async function saveProject(payload){
   try{
-    await api('/api/project', {method:'POST',headers:{'Content-Type':'application/json'},
+    const r = await api('/api/project', {method:'POST',headers:{'Content-Type':'application/json'},
       body: JSON.stringify(payload)});
-    markDirty();
+    if(r.changed) markDirty();   // skip the autosave if the schedule didn't change
     renderTimeline();
   }catch(e){ toast(e.message, true); }
 }
