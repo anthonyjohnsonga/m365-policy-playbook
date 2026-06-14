@@ -219,6 +219,21 @@ function Export-ReportExcel {
     $OutPath
 }
 
+# --- Keep the reports folder from growing without bound ----------------------
+#  Generated reports are throwaway snapshots the user downloads; the server copy
+#  only needs to stay small. Prune to the newest $Keep .xlsx/.pdf files.
+#  Best-effort: a cleanup hiccup must never fail a download.
+function Limit-ReportFiles {
+    param([Parameter(Mandatory)][string]$Dir, [int]$Keep = 40)
+    try {
+        if (-not (Test-Path $Dir)) { return }
+        Get-ChildItem $Dir -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Extension -in '.xlsx', '.pdf' } |
+            Sort-Object LastWriteTime -Descending | Select-Object -Skip $Keep |
+            Remove-Item -Force -ErrorAction SilentlyContinue
+    } catch { }
+}
+
 # --- PDF export (via Edge / Chrome headless) ---------------------------------
 function Find-HeadlessBrowser {
     $cands = @(

@@ -316,6 +316,7 @@ Start-PodeServer -Browse:$Browse {
         $out  = Join-Path (Join-Path $env:PLAYBOOK_ROOT 'reports') $name
         try {
             Export-ReportExcel $eng $out | Out-Null
+            Limit-ReportFiles -Dir (Split-Path $out -Parent)
             Set-PodeHeader -Name 'Content-Disposition' -Value "attachment; filename=`"$name`""
             Write-PodeFileResponse -Path $out -ContentType 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         } catch { Set-PodeResponseStatus -Code 500 -NoErrorPage; Write-PodeJsonResponse -Value @{ error="$($_.Exception.Message)" } }
@@ -330,6 +331,7 @@ Start-PodeServer -Browse:$Browse {
         $out  = Join-Path (Join-Path $env:PLAYBOOK_ROOT 'reports') $name
         try {
             Export-ReportPdf $eng $out | Out-Null
+            Limit-ReportFiles -Dir (Split-Path $out -Parent)
             Set-PodeHeader -Name 'Content-Disposition' -Value "attachment; filename=`"$name`""
             Write-PodeFileResponse -Path $out -ContentType 'application/pdf'
         } catch { Set-PodeResponseStatus -Code 500 -NoErrorPage; Write-PodeJsonResponse -Value @{ error="$($_.Exception.Message)" } }
