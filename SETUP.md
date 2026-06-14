@@ -168,7 +168,8 @@ What happens:
 2. The **first time only**, it asks to install them — type **Y** and Enter for
    each. (Needs internet; ~1 minute. Accept any gallery / NuGet prompts.)
 3. You'll see `Starting server at http://127.0.0.1:8080`.
-4. After ~2 seconds your **default browser opens** to the app automatically.
+4. Once the server is ready your **default browser opens** to the app
+   automatically (it waits for the server, so it won't open to a blank page).
 
 **Leave the PowerShell window open** while you use the app — that window *is* the
 server. To **stop**: press **Ctrl + C** in it (or close the window).
