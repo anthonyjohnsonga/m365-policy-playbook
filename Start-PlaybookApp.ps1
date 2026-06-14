@@ -1,3 +1,4 @@
+#requires -Version 7
 <#
 .SYNOPSIS
     Launches the M365 Policy Playbook web app (PowerShell + Pode).
