@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M365 Policy Playbook</title>
+<!-- Apply saved theme before paint to avoid a flash; defaults to dark. -->
+<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('pb-theme')||'dark');}catch(e){}</script>
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+
+<!-- ===== Top bar ===== -->
+<header id="topbar">
+  <div class="brand">
+    <div class="logo">M365</div>
+    <div class="brandtext">
+      <div class="t1">Policy Playbook</div>
+      <div class="t2">Microsoft 365 Hardening</div>
+    </div>
+  </div>
+  <div id="engInfo" class="enginfo hidden">
+    <span id="engClient" class="client"></span>
+    <span id="engPlaybook" class="pill"></span>
+    <span id="savedFlag" class="saved"></span>
+  </div>
+  <div class="rightbar">
+    <div id="topActions" class="actions hidden">
+      <button id="btnNewClient" class="btn ghost">+ New client</button>
+      <button id="btnSave" class="btn primary">Save to Excel</button>
+      <div class="menu">
+        <button class="btn">Reports &#9662;</button>
+        <div class="dropdown">
+          <a href="/api/report/view" target="_blank">View status report</a>
+          <a href="/api/report/excel">Download Excel</a>
+          <a href="/api/report/pdf">Download PDF</a>
+        </div>
+      </div>
+      <button id="btnSwitch" class="btn ghost">Switch</button>
+    </div>
+    <button id="btnTheme" class="iconbtn" type="button" title="Toggle light / dark" aria-label="Toggle light or dark theme">&#9728;</button>
+  </div>
+</header>
+
+<!-- ===== Start screen ===== -->
+<section id="startScreen" class="start hidden">
+  <div class="startcard">
+    <h1>Start an engagement</h1>
+    <p class="lead">Walk a client through their Microsoft 365 policy baseline, track status live, and produce a shareable report.</p>
+
+    <div class="cols">
+      <div class="col">
+        <h3>New engagement</h3>
+        <label>Client name</label>
+        <input id="newClient" type="text" placeholder="e.g. Acme Corp" autocomplete="off">
+        <label>Playbook</label>
+        <select id="newPlaybook"></select>
+        <button id="btnNew" class="btn cta wide">Create</button>
+      </div>
+      <div class="col">
+        <h3>Resume saved work</h3>
+        <label>Saved client files</label>
+        <select id="openFile"><option value="">No saved files yet</option></select>
+        <button id="btnOpen" class="btn wide">Open</button>
+        <p class="hint">Saved Excel files live in <code>data\clients</code>. Saving again updates the same file.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Main app ===== -->
+<main id="app" class="app hidden">
+  <aside id="sidebar">
+    <div class="progress">
+      <div class="ring"><span id="pctText">0%</span></div>
+      <div class="ptext"><b id="doneText">0</b> of <span id="totalText">0</span> <span id="verbText">done</span></div>
+    </div>
+    <div class="impactlegend">
+      <span class="il"><i class="dot high"></i><span id="cntHigh">0</span> High</span>
+      <span class="il"><i class="dot medium"></i><span id="cntMed">0</span> Med</span>
+      <span class="il"><i class="dot low"></i><span id="cntLow">0</span> Low</span>
+    </div>
+
+    <div class="filters">
+      <input id="search" type="text" placeholder="Search policies...">
+      <div class="chiprow" id="impactFilter">
+        <button class="chip active" data-impact="all">All impact</button>
+        <button class="chip" data-impact="high">High</button>
+        <button class="chip" data-impact="medium">Med</button>
+        <button class="chip" data-impact="low">Low</button>
+      </div>
+      <button id="attnToggle" class="attn-toggle hidden" type="button"></button>
+    </div>
+
+    <nav id="sectionNav"></nav>
+  </aside>
+
+  <section id="content">
+    <div id="viewbar">
+      <div class="seg" id="viewSeg">
+        <button data-view="checklist" class="active">Checklist</button>
+        <button data-view="timeline">Timeline</button>
+        <button data-view="devices">Devices</button>
+      </div>
+      <div id="bulkbar" class="bulkbar">
+        <span class="bulklabel">Set <b id="bulkCount">0</b> to</span>
+        <select id="bulkStatus"></select>
+        <select id="bulkScope">
+          <option value="visible">visible (this section)</option>
+          <option value="filtered">all matching filter</option>
+        </select>
+        <button id="bulkApply" class="btn cta">Apply</button>
+      </div>
+    </div>
+    <div id="contentHead" class="contenthead"></div>
+    <div id="cards"></div>
+    <div id="timeline" class="timeline hidden"></div>
+    <div id="devices" class="devices hidden"></div>
+  </section>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>

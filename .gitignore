@@ -1,0 +1,15 @@
+# ---------------------------------------------------------------------------
+#  M365 Policy Playbook - .gitignore
+# ---------------------------------------------------------------------------
+
+# Generated reports (Excel / PDF / HTML output) - never publish
+/reports/
+
+# Saved client engagement files - never publish (contains client data)
+/data/clients/
+
+# OS / editor cruft
+Thumbs.db
+desktop.ini
+.DS_Store
+*~
