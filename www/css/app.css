@@ -177,6 +177,7 @@ code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
 .gantt-track{position:relative;flex:1;height:22px;background:var(--track);border-radius:6px;overflow:hidden}
 .gantt-bar{position:absolute;top:0;height:100%;background:var(--brand);border-radius:6px;display:flex;align-items:center;min-width:18px}
 .gantt-bar.imp1{background:#2f8f5b}.gantt-bar.imp2{background:var(--brand)}.gantt-bar.imp3{background:#7a5cc0}
+.gantt-bar.dev{background:#178a8a}
 .gantt-fill{position:absolute;left:0;top:0;height:100%;background:rgba(0,0,0,.22)}
 .gantt-blabel{position:relative;z-index:1;color:#fff;font-size:10px;font-weight:700;padding-left:7px}
 .gantt-when{width:80px;flex:none;font-size:11px;color:var(--muted);text-align:right}

@@ -466,6 +466,22 @@ async function renderTimeline(){
         <div class="gantt-when">${ph.start?fmtDate(ph.start):'—'} – ${ph.end?fmtDate(ph.end):'—'}</div>
       </div>`;
     });
+
+    // device enrollment track — spans the full project window, fills to enrolled %
+    const dv = data.devices;
+    if(dv && dv.total){
+      const dlabel = `Devices → ${enc(dv.target)}`;
+      html += `<div class="gantt-row">
+        <div class="gantt-label" title="${dlabel}">${dlabel}</div>
+        <div class="gantt-track">
+          <div class="gantt-bar dev" style="left:0;width:100%">
+            <div class="gantt-fill" style="width:${dv.pct}%"></div>
+            <span class="gantt-blabel">${dv.atTarget}/${dv.total} enrolled (${dv.pct}%)</span>
+          </div>
+        </div>
+        <div class="gantt-when">${dv.pct}%</div>
+      </div>`;
+    }
     html += `</div>`;
   } else {
     html += `<div class="sched-hint">Set a project <b>start</b> and <b>end</b> date to build the schedule — the three phases auto-distribute across the window, and you can fine-tune each one below or set a planned date on individual policies.</div>`;
@@ -583,8 +599,9 @@ async function renderDevices(){
   let html = `
    <div class="dev-top">
      <div class="dev-target">
-       <label>Target enrollment</label>
+       <label>Project enrollment goal</label>
        <select id="devTarget">${targetOpts}</select>
+       <div class="hint">Drives the device track on the Timeline.</div>
      </div>
      <div class="dev-stats">
        <div class="dstat"><div class="dn">${s.total}</div><div class="dl">Devices</div></div>

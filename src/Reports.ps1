@@ -57,6 +57,7 @@ function Get-Timeline {
     [pscustomobject]@{
         project = @{ start = $proj.Start; end = $proj.End }
         phases  = @($out)
+        devices = (Get-DeviceSummary $Engagement)
     }
 }
 
@@ -125,6 +126,20 @@ function Build-ReportHtml {
         }
     }
 
+    # Device enrollment progress (snapshot against the enrollment goal)
+    $dev = Get-DeviceSummary $Engagement
+    if ($dev.total) {
+        [void]$sb.Append("<h2>Device Enrollment</h2>")
+        [void]$sb.Append("<div class='sub'>Goal: enroll devices to <b>$(HtmlEnc $dev.target)</b>.</div>")
+        [void]$sb.Append("<div class='cards'>")
+        [void]$sb.Append("<div class='card'><div class='n'>$($dev.total)</div><div class='l'>Devices</div></div>")
+        [void]$sb.Append("<div class='card'><div class='n'>$($dev.atTarget)</div><div class='l'>At Goal ($(HtmlEnc $dev.target))</div></div>")
+        [void]$sb.Append("<div class='card'><div class='n'>$($dev.pct)%</div><div class='l'>Enrolled</div></div>")
+        [void]$sb.Append("<div class='card'><div class='n' style='color:var(--high)'>$($dev.notEnrolled)</div><div class='l'>Not Enrolled</div></div>")
+        [void]$sb.Append("</div>")
+        [void]$sb.Append("<div class='bar' style='margin-top:6px'><span style='width:$($dev.pct)%'></span></div>")
+    }
+
     # Rollout schedule / timeline
     $proj = $Engagement.Project
     $hasDates = $proj -and $proj.Start -and $proj.End
@@ -153,6 +168,8 @@ function Export-ReportExcel {
     if (Test-Path $OutPath) { Remove-Item $OutPath -Force }
 
     # Summary
+    $dev = Get-DeviceSummary $Engagement
+    $summaryRows = [System.Collections.Generic.List[object]]::new()
     @(
         [pscustomobject]@{ Metric='Client';        Value=$Engagement.ClientName }
         [pscustomobject]@{ Metric='Playbook';      Value=$cfg.DisplayName }
@@ -163,7 +180,17 @@ function Export-ReportExcel {
         [pscustomobject]@{ Metric='High impact';   Value=$sum.High }
         [pscustomobject]@{ Metric='Medium impact'; Value=$sum.Medium }
         [pscustomobject]@{ Metric='Low/None impact';Value=$sum.Low }
-    ) | Export-Excel -Path $OutPath -WorksheetName 'Summary' -AutoSize -TitleBold -Title "$($Engagement.ClientName) - Status Summary"
+    ) | ForEach-Object { $summaryRows.Add($_) }
+    if ($dev.total) {
+        @(
+            [pscustomobject]@{ Metric='Device goal';          Value=$dev.target }
+            [pscustomobject]@{ Metric='Total devices';        Value=$dev.total }
+            [pscustomobject]@{ Metric="At goal ($($dev.target))"; Value=$dev.atTarget }
+            [pscustomobject]@{ Metric='Devices % enrolled';   Value="$($dev.pct)%" }
+            [pscustomobject]@{ Metric='Not enrolled';         Value=$dev.notEnrolled }
+        ) | ForEach-Object { $summaryRows.Add($_) }
+    }
+    $summaryRows | Export-Excel -Path $OutPath -WorksheetName 'Summary' -AutoSize -TitleBold -Title "$($Engagement.ClientName) - Status Summary"
 
     $sum.Sections | Select-Object Section,Done,Total,@{n='% Done';e={$_.Pct}} |
         Export-Excel -Path $OutPath -WorksheetName 'By Section' -AutoSize -TableStyle Medium2
@@ -180,6 +207,15 @@ function Export-ReportExcel {
                       @{n='What It Does';e={$_.WhatItDoes}},
                       @{n='Portal Path';e={$_.PortalPath}},Notes |
         Export-Excel -Path $OutPath -WorksheetName 'Full Status' -AutoSize -TableStyle Light1 -FreezeTopRow
+
+    if ($dev.total) {
+        @($Engagement.Devices) |
+            Select-Object Name,OS,User,
+                          @{n='Current';e={$_.Current}},
+                          @{n='At Goal';e={ if ($_.Current -eq $dev.target) { 'Yes' } else { '' } }},
+                          Status,Notes |
+            Export-Excel -Path $OutPath -WorksheetName 'Devices' -AutoSize -TableStyle Medium2 -FreezeTopRow
+    }
     $OutPath
 }
 
