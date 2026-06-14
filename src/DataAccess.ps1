@@ -344,13 +344,15 @@ function Save-Engagement {
         # any policy lacking a SheetRow.
         $row = 3
         foreach ($p in $Engagement.Policies) {
-            $target = if ($p.PSObject.Properties['SheetRow'] -and $p.SheetRow) { [int]$p.SheetRow } else { $row }
-            $ws.Cells[$target, $trackCol['Status']].Value        = $p.Status
-            $ws.Cells[$target, $trackCol['DateCompleted']].Value = $p.DateCompleted
-            $ws.Cells[$target, $trackCol['Tech']].Value          = $p.Tech
-            $ws.Cells[$target, $trackCol['Notes']].Value         = $p.Notes
-            $ws.Cells[$target, $trackCol['PlannedDate']].Value   = $p.PlannedDate
-            $row = $target + 1
+            # NOTE: use a dedicated row variable here — do NOT reuse $target, which
+            # holds the destination file path and must survive this loop intact.
+            $rowNum = if ($p.PSObject.Properties['SheetRow'] -and $p.SheetRow) { [int]$p.SheetRow } else { $row }
+            $ws.Cells[$rowNum, $trackCol['Status']].Value        = $p.Status
+            $ws.Cells[$rowNum, $trackCol['DateCompleted']].Value = $p.DateCompleted
+            $ws.Cells[$rowNum, $trackCol['Tech']].Value          = $p.Tech
+            $ws.Cells[$rowNum, $trackCol['Notes']].Value         = $p.Notes
+            $ws.Cells[$rowNum, $trackCol['PlannedDate']].Value   = $p.PlannedDate
+            $row = $rowNum + 1
         }
         # write / refresh _meta sheet (client info + project schedule)
         $meta = $pkg.Workbook.Worksheets['_meta']
