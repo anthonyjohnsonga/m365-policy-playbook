@@ -47,6 +47,25 @@ Start-PodeServer -Browse:$Browse {
         Write-PodeJsonResponse -Value @{ playbooks = @($list) }
     }
 
+    # ---- settings: read-only app folder locations ----
+    Add-PodeRoute -Method Get -Path '/api/settings' -ScriptBlock {
+        $root = $env:PLAYBOOK_ROOT
+        # Each entry: where the app keeps a class of files, plus a live count so
+        # the panel doubles as an at-a-glance health check. Display-only for now.
+        $defs = @(
+            @{ label='Client working files'; path=(Join-Path $root 'data\clients');          filter='*.xlsx' }
+            @{ label='Master playbooks';     path=(Join-Path $root 'data\masters');          filter='*.xlsx' }
+            @{ label='Backups';              path=(Join-Path $root 'data\clients\_backups'); filter='*.xlsx' }
+            @{ label='Reports';              path=(Join-Path $root 'reports');               filter='*'      }
+        )
+        $folders = foreach ($d in $defs) {
+            $exists = Test-Path $d.path
+            $count  = if ($exists) { @(Get-ChildItem -Path $d.path -Filter $d.filter -File -ErrorAction SilentlyContinue).Count } else { 0 }
+            [pscustomobject]@{ label=$d.label; path=$d.path; exists=$exists; count=$count }
+        }
+        Write-PodeJsonResponse -Value @{ root=$root; port=[int]$env:PLAYBOOK_PORT; folders=@($folders) }
+    }
+
     # ---- saved client files ----
     Add-PodeRoute -Method Get -Path '/api/clients' -ScriptBlock {
         $dir = Join-Path $env:PLAYBOOK_ROOT 'data\clients'

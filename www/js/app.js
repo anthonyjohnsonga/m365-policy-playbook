@@ -105,9 +105,40 @@ function initTheme(){
   };
 }
 
+/* ---------- settings (display-only) ---------- */
+function initSettings(){
+  const overlay = $('#settingsOverlay');
+  const open  = () => { loadSettings(); overlay.classList.remove('hidden'); };
+  const close = () => overlay.classList.add('hidden');
+  const btn = $('#btnSettings');
+  if(btn) btn.onclick = open;
+  $('#settingsClose').onclick = close;
+  // Dismiss on backdrop click or Esc.
+  overlay.onclick = e => { if(e.target===overlay) close(); };
+  document.addEventListener('keydown', e => { if(e.key==='Escape' && !overlay.classList.contains('hidden')) close(); });
+}
+
+async function loadSettings(){
+  const wrap = $('#settingsFolders');
+  wrap.innerHTML = '<div class="empty">Loading…</div>';
+  $('#settingsMeta').innerHTML = '';
+  let s;
+  try{ s = await api('/api/settings'); }
+  catch(e){ wrap.innerHTML = `<div class="empty">${enc(e.message)}</div>`; return; }
+  wrap.innerHTML = s.folders.map(f => `
+    <div class="setrow${f.exists?'':' missing'}">
+      <div class="setlabel"><span>${enc(f.label)}</span>
+        ${f.exists?`<span class="setcount">${f.count} ${f.count===1?'file':'files'}</span>`:''}</div>
+      <div class="setpath">${enc(f.path)}</div>
+      ${f.exists?'':'<div class="setmissing">Not created yet — appears on first use.</div>'}
+    </div>`).join('');
+  $('#settingsMeta').innerHTML = `Serving at <code>http://127.0.0.1:${enc(s.port)}</code>`;
+}
+
 /* ---------- boot ---------- */
 async function boot(){
   initTheme();
+  initSettings();
   // Warn before leaving with unsaved work; safety-net autosave every 20s.
   window.addEventListener('beforeunload', e => {
     if(state.dirty || state.saving){ e.preventDefault(); e.returnValue = ''; }
