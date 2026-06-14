@@ -307,6 +307,34 @@ function Open-Engagement {
     }
 }
 
+# --- Companion tier lookup (the client's OTHER playbook file) ----------------
+#  Tier 0 (verification) and Tier 1 (deployment) are separate files. Now that a
+#  client's files share one folder, the companion is just the newest file of the
+#  other tier in that same folder.
+function Get-OtherPlaybookKey {
+    param([string]$Key)
+    if ($Key -eq 'Tier1') { return 'Tier0' }
+    if ($Key -eq 'Tier0') { return 'Tier1' }
+    return $null
+}
+
+function Find-CompanionFile {
+    param([Parameter(Mandatory)]$Engagement)
+    $otherKey = Get-OtherPlaybookKey $Engagement.Playbook
+    if (-not $otherKey) { return $null }
+    # Prefer the active file's own folder; for a brand-new (never-saved)
+    # engagement, fall back to the client folder derived from the client name.
+    $folder = if ($Engagement.SourceFile) { Split-Path $Engagement.SourceFile -Parent }
+              else { Join-Path (Get-ClientsPath) ($Engagement.ClientName -replace '[^\w\-]','_') }
+    if (-not (Test-Path $folder)) { return $null }
+    $candidates = Get-ChildItem $folder -Filter *.xlsx -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending
+    foreach ($c in $candidates) {
+        if ($Engagement.SourceFile -and $c.FullName -eq $Engagement.SourceFile) { continue }
+        try { if ((Get-PlaybookKeyForFile -Path $c.FullName) -eq $otherKey) { return $c.FullName } } catch { }
+    }
+    return $null
+}
+
 # --- Keep timestamped backups of a client file before it is overwritten ------
 #  Best-effort: a backup hiccup must never block a save. Throttled so frequent
 #  autosaves don't spawn a copy every time, and pruned to the newest N. Backups

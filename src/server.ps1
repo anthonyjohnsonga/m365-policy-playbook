@@ -219,6 +219,39 @@ Start-PodeServer -Browse:$Browse {
         Write-PodeJsonResponse -Value @{ ok=$true; count=$count; summary=(Get-EngagementSummary $eng) }
     }
 
+    # ---- companion tier: read-only view of the client's OTHER tier ----
+    Add-PodeRoute -Method Get -Path '/api/companion' -ScriptBlock {
+        $eng = Get-PodeState -Name 'eng'
+        if (-not $eng) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
+        $otherKey = Get-OtherPlaybookKey $eng.Playbook
+        if (-not $otherKey) { Write-PodeJsonResponse -Value @{ available=$false; reason='This playbook has no companion tier.' }; return }
+        $cfg  = (Get-PlaybookConfig)[$otherKey]
+        $path = Find-CompanionFile -Engagement $eng
+        if (-not $path) {
+            Write-PodeJsonResponse -Value @{ available=$false; tier=$otherKey; shortName=$cfg.ShortName; displayName=$cfg.DisplayName; reason=("No saved {0} file for this client yet." -f $cfg.ShortName) }
+            return
+        }
+        try {
+            # Load read-only — never stored in Pode state, so the active
+            # engagement is untouched.
+            $other = Open-Engagement -Path $path
+            $pols  = foreach ($p in $other.Policies) {
+                [pscustomobject]@{ Section=$p.Section; PolicyName=$p.PolicyName; Impact=$p.Impact; ImpactClass=$p.ImpactClass; Status=$p.Status; DateCompleted=$p.DateCompleted }
+            }
+            Write-PodeJsonResponse -Value @{
+                available    = $true
+                tier         = $otherKey
+                shortName    = $cfg.ShortName
+                displayName  = $cfg.DisplayName
+                verbPast     = $cfg.VerbPast
+                file         = (Split-Path $path -Leaf)
+                summary      = (Get-EngagementSummary $other)
+                doneStatuses = @(Get-DoneStatusSet $otherKey)
+                policies     = @($pols)
+            }
+        } catch { Set-PodeResponseStatus -Code 500 -NoErrorPage; Write-PodeJsonResponse -Value @{ error="$($_.Exception.Message)" } }
+    }
+
     # ---- rollout timeline (project window + phase schedule) ----
     Add-PodeRoute -Method Get -Path '/api/timeline' -ScriptBlock {
         $eng = Get-PodeState -Name 'eng'

@@ -7,7 +7,7 @@ const enc = s => (s ?? '').toString()
 const state = {
   active:false, policies:[], statusOptions:[], doneStatuses:[], verb:'done',
   section:null, impact:'all', search:'', view:'checklist', attention:false,
-  sourceFile:null, dirty:false, saving:false, autosaveFailed:false
+  sourceFile:null, dirty:false, saving:false, autosaveFailed:false, playbook:null
 };
 
 /* ---------- schedule health ---------- */
@@ -145,7 +145,7 @@ async function boot(){
   });
   setInterval(()=> { if(state.active && state.dirty && !state.saving) doSave(true); }, 20000);
   const v = new URLSearchParams(location.search).get('view');
-  if(['timeline','checklist','devices'].includes(v)) state.view = v;
+  if(['timeline','checklist','devices','companion'].includes(v)) state.view = v;
   await loadPlaybookOptions();
   await loadClientFiles();
   await refreshState();
@@ -190,8 +190,13 @@ async function refreshState(){
   state.verb = (s.verbPast || 'Done').toLowerCase();
   state.sourceFile = s.sourceFile || null;
   state.dirty = !!s.dirty;
+  state.playbook = s.playbook || null;
   $('#engClient').textContent = s.client;
   $('#engPlaybook').textContent = s.playbookName;
+  // The companion view shows the OTHER tier; label the tab accordingly.
+  const compName = s.playbook==='Tier1' ? 'Tier 0' : (s.playbook==='Tier0' ? 'Tier 1' : null);
+  const cb = $('#btnCompanion');
+  if(cb){ cb.classList.toggle('hidden', !compName); if(compName) cb.textContent = compName; }
   updateSaveIndicator();
   // engagement already had unsaved edits (e.g. after a page refresh)? persist soon.
   if(state.dirty){ clearTimeout(_autosaveT); _autosaveT = setTimeout(()=> doSave(true), AUTOSAVE_MS); }
@@ -426,15 +431,17 @@ function wireViews(){
 function setView(v){
   state.view = v;
   $$('#viewSeg button').forEach(b => b.classList.toggle('active', b.dataset.view===v));
-  const checklist = v==='checklist', timeline = v==='timeline', devices = v==='devices';
+  const checklist = v==='checklist', timeline = v==='timeline', devices = v==='devices', companion = v==='companion';
   $('#bulkbar').classList.toggle('hidden', !checklist);
   $('#contentHead').classList.toggle('hidden', !checklist);
   $('#cards').classList.toggle('hidden', !checklist);
   $('#timeline').classList.toggle('hidden', !timeline);
   $('#devices').classList.toggle('hidden', !devices);
+  $('#companion').classList.toggle('hidden', !companion);
   if(checklist) renderCards();
   else if(timeline) renderTimeline();
   else if(devices) renderDevices();
+  else if(companion) renderCompanion();
 }
 
 /* ---------- bulk actions ---------- */
@@ -794,6 +801,48 @@ function importCsv(text){
   }
   if(!devices.length){ toast('No device rows found in CSV', true); return; }
   addDevices(devices);
+}
+
+/* ---------- companion tier (read-only) ---------- */
+async function renderCompanion(){
+  const wrap = $('#companion');
+  wrap.innerHTML = '<div class="empty">Loading…</div>';
+  let d;
+  try{ d = await api('/api/companion'); }
+  catch(e){ wrap.innerHTML = `<div class="empty">${enc(e.message)}</div>`; return; }
+  if(!d.available){
+    wrap.innerHTML = `<div class="empty">${enc(d.reason || 'No companion tier available.')}</div>`;
+    return;
+  }
+  const done = d.doneStatuses || [];
+  const s = d.summary;
+  const rank = {high:0, medium:1, low:2, none:3};
+  const bySec = new Map();
+  d.policies.forEach(p => { if(!bySec.has(p.Section)) bySec.set(p.Section, []); bySec.get(p.Section).push(p); });
+
+  let html = `<div class="comp-head">
+    <div>
+      <h2>${enc(d.shortName)} status</h2>
+      <div class="meta">${enc(d.displayName)} · read-only · from <code>${enc(d.file)}</code></div>
+    </div>
+    <div class="comp-stat"><b>${s.Pct}%</b> ${enc((d.verbPast||'done').toLowerCase())} · ${s.Done}/${s.Total}</div>
+  </div>`;
+
+  for(const [sec, items] of bySec){
+    const secDone = items.filter(p => done.includes(p.Status)).length;
+    items.sort((a,b)=> (rank[a.ImpactClass]-rank[b.ImpactClass]) || a.PolicyName.localeCompare(b.PolicyName));
+    html += `<div class="comp-sec">
+      <div class="comp-sechead"><span>${enc(sec)}</span><span class="comp-seccount">${secDone}/${items.length}</span></div>
+      ${items.map(p => `
+        <div class="comp-item">
+          <span class="mini-badge ${p.ImpactClass}">${enc(p.Impact)}</span>
+          <span class="tname">${enc(p.PolicyName)}</span>
+          ${p.DateCompleted?`<span class="comp-date">${enc(fmtDate(p.DateCompleted))}</span>`:''}
+          <span class="status-chip ${statusClass(p.Status)}">${enc(p.Status)}</span>
+        </div>`).join('')}
+    </div>`;
+  }
+  wrap.innerHTML = html;
 }
 
 function jumpToPolicy(id, section){
