@@ -67,6 +67,20 @@ function ConvertTo-ImpactClass {
     }
 }
 
+# --- Date normalization ------------------------------------------------------
+#  Excel may hand a date back as a real DateTime / locale string (e.g.
+#  "6/12/2026 12:00:00 AM"). Coerce everything to ISO 'yyyy-MM-dd' at import so
+#  the client's date inputs AND its overdue/due-soon badges (which do a plain
+#  new Date('yyyy-MM-dd')) agree with the server's own due-date math. A value we
+#  can't parse is passed through untouched rather than blanked.
+function ConvertTo-IsoDate {
+    param([string]$Value)
+    if (-not $Value) { return '' }
+    $d = [datetime]::MinValue
+    if ([datetime]::TryParse($Value, [ref]$d)) { return $d.ToString('yyyy-MM-dd') }
+    return $Value
+}
+
 # --- Detect which playbook a workbook is -------------------------------------
 function Get-PlaybookKeyForFile {
     param([string]$Path)
@@ -117,8 +131,8 @@ function Import-Playbook {
                 WhatUsersExperience= [string]$r.'What Users Will Experience'
                 PortalPath         = [string]$r.'Portal Path'
                 Status             = [string]($r.'Status');
-                PlannedDate        = [string]$r.'Planned Date'
-                DateCompleted      = [string]$r.'Date Completed'
+                PlannedDate        = ConvertTo-IsoDate ([string]$r.'Planned Date')
+                DateCompleted      = ConvertTo-IsoDate ([string]$r.'Date Completed')
                 Tech               = [string]$r.'Tech'
                 Notes              = [string]$r.'Notes / Pre-Deploy Checks'
                 AutoRemediable     = [string]$r.'Auto-Remediable'
@@ -139,8 +153,8 @@ function Import-Playbook {
                 WhatUsersExperience= [string]$r.'Notes / Verification Tips'
                 PortalPath         = [string]$r.'Portal Path'
                 Status             = [string]$r.'Status'
-                PlannedDate        = [string]$r.'Planned Date'
-                DateCompleted      = [string]$r.'Verified Date'
+                PlannedDate        = ConvertTo-IsoDate ([string]$r.'Planned Date')
+                DateCompleted      = ConvertTo-IsoDate ([string]$r.'Verified Date')
                 Tech               = [string]$r.'Tech'
                 Notes              = [string]$r.'Drift / Change Notes'
                 AutoRemediable     = ''
