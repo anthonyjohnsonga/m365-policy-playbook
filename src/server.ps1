@@ -84,13 +84,13 @@ Start-PodeServer -Browse:$Browse {
     Add-PodeRoute -Method Post -Path '/api/engagement/new' -ScriptBlock {
         $d = $WebEvent.Data
         if (-not $d.clientName -or -not $d.playbook) {
-            Set-PodeResponseStatus -Code 400; Write-PodeJsonResponse -Value @{ error='clientName and playbook required' }; return
+            Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='clientName and playbook required' }; return
         }
         try {
             $eng = New-Engagement -ClientName $d.clientName -PlaybookKey $d.playbook
             Set-PodeState -Name 'eng' -Value $eng | Out-Null
             Write-PodeJsonResponse -Value @{ ok=$true }
-        } catch { Set-PodeResponseStatus -Code 500; Write-PodeJsonResponse -Value @{ error="$($_.Exception.Message)" } }
+        } catch { Set-PodeResponseStatus -Code 500 -NoErrorPage; Write-PodeJsonResponse -Value @{ error="$($_.Exception.Message)" } }
     }
 
     # ---- open saved engagement ----
@@ -98,12 +98,12 @@ Start-PodeServer -Browse:$Browse {
         $d = $WebEvent.Data
         $dir  = Join-Path $env:PLAYBOOK_ROOT 'data\clients'
         $path = Join-Path $dir ([IO.Path]::GetFileName([string]$d.file))
-        if (-not (Test-Path $path)) { Set-PodeResponseStatus -Code 404; Write-PodeJsonResponse -Value @{ error='file not found' }; return }
+        if (-not (Test-Path $path)) { Set-PodeResponseStatus -Code 404 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='file not found' }; return }
         try {
             $eng = Open-Engagement -Path $path
             Set-PodeState -Name 'eng' -Value $eng | Out-Null
             Write-PodeJsonResponse -Value @{ ok=$true }
-        } catch { Set-PodeResponseStatus -Code 500; Write-PodeJsonResponse -Value @{ error="$($_.Exception.Message)" } }
+        } catch { Set-PodeResponseStatus -Code 500 -NoErrorPage; Write-PodeJsonResponse -Value @{ error="$($_.Exception.Message)" } }
     }
 
     # ---- close engagement ----
@@ -115,7 +115,7 @@ Start-PodeServer -Browse:$Browse {
     # ---- policies ----
     Add-PodeRoute -Method Get -Path '/api/policies' -ScriptBlock {
         $eng = Get-PodeState -Name 'eng'
-        if (-not $eng) { Set-PodeResponseStatus -Code 400; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
+        if (-not $eng) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
         Write-PodeJsonResponse -Value @{ policies = @($eng.Policies) }
     }
 
@@ -123,7 +123,7 @@ Start-PodeServer -Browse:$Browse {
     Add-PodeRoute -Method Post -Path '/api/policy' -ScriptBlock {
         $d = $WebEvent.Data
         $eng = Get-PodeState -Name 'eng'
-        if (-not $eng) { Set-PodeResponseStatus -Code 400; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
+        if (-not $eng) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
         $pol = $eng.Policies | Where-Object { $_.Id -eq [int]$d.id } | Select-Object -First 1
         if ($pol) {
             switch ([string]$d.field) {
@@ -143,7 +143,7 @@ Start-PodeServer -Browse:$Browse {
     Add-PodeRoute -Method Post -Path '/api/policy/bulk' -ScriptBlock {
         $d = $WebEvent.Data
         $eng = Get-PodeState -Name 'eng'
-        if (-not $eng) { Set-PodeResponseStatus -Code 400; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
+        if (-not $eng) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
         $field = [string]$d.field
         $value = [string]$d.value
         $ids = [System.Collections.Generic.HashSet[int]]::new()
@@ -168,7 +168,7 @@ Start-PodeServer -Browse:$Browse {
     # ---- rollout timeline (project window + phase schedule) ----
     Add-PodeRoute -Method Get -Path '/api/timeline' -ScriptBlock {
         $eng = Get-PodeState -Name 'eng'
-        if (-not $eng) { Set-PodeResponseStatus -Code 400; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
+        if (-not $eng) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
         Write-PodeJsonResponse -Value (Get-Timeline $eng)
     }
 
@@ -176,7 +176,7 @@ Start-PodeServer -Browse:$Browse {
     Add-PodeRoute -Method Post -Path '/api/project' -ScriptBlock {
         $d = $WebEvent.Data
         $eng = Get-PodeState -Name 'eng'
-        if (-not $eng) { Set-PodeResponseStatus -Code 400; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
+        if (-not $eng) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
         $p = $eng.Project
         if ($null -ne $d.projectStart) { $p.Start = [string]$d.projectStart }
         if ($null -ne $d.projectEnd)   { $p.End   = [string]$d.projectEnd }
@@ -197,7 +197,7 @@ Start-PodeServer -Browse:$Browse {
     # ---- devices: list ----
     Add-PodeRoute -Method Get -Path '/api/devices' -ScriptBlock {
         $eng = Get-PodeState -Name 'eng'
-        if (-not $eng) { Set-PodeResponseStatus -Code 400; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
+        if (-not $eng) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
         Write-PodeJsonResponse -Value @{ target=$eng.DeviceTarget; devices=@($eng.Devices); summary=(Get-DeviceSummary $eng) }
     }
 
@@ -205,7 +205,7 @@ Start-PodeServer -Browse:$Browse {
     Add-PodeRoute -Method Post -Path '/api/devices/add' -ScriptBlock {
         $d = $WebEvent.Data
         $eng = Get-PodeState -Name 'eng'
-        if (-not $eng) { Set-PodeResponseStatus -Code 400; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
+        if (-not $eng) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
         $list = New-Object System.Collections.Generic.List[object]
         foreach ($x in @($eng.Devices)) { $list.Add($x) }
         $next = 1
@@ -229,7 +229,7 @@ Start-PodeServer -Browse:$Browse {
     Add-PodeRoute -Method Post -Path '/api/devices/update' -ScriptBlock {
         $d = $WebEvent.Data
         $eng = Get-PodeState -Name 'eng'
-        if (-not $eng) { Set-PodeResponseStatus -Code 400; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
+        if (-not $eng) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
         $dev = @($eng.Devices) | Where-Object { [int]$_.Id -eq [int]$d.id } | Select-Object -First 1
         if ($dev) {
             switch ([string]$d.field) {
@@ -250,7 +250,7 @@ Start-PodeServer -Browse:$Browse {
     Add-PodeRoute -Method Post -Path '/api/devices/delete' -ScriptBlock {
         $d = $WebEvent.Data
         $eng = Get-PodeState -Name 'eng'
-        if (-not $eng) { Set-PodeResponseStatus -Code 400; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
+        if (-not $eng) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
         $eng.Devices = @(@($eng.Devices) | Where-Object { [int]$_.Id -ne [int]$d.id })
         $eng['Dirty'] = $true
         Set-PodeState -Name 'eng' -Value $eng | Out-Null
@@ -261,7 +261,7 @@ Start-PodeServer -Browse:$Browse {
     Add-PodeRoute -Method Post -Path '/api/devices/target' -ScriptBlock {
         $d = $WebEvent.Data
         $eng = Get-PodeState -Name 'eng'
-        if (-not $eng) { Set-PodeResponseStatus -Code 400; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
+        if (-not $eng) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
         if ([string]$d.target -in 'Intune','Hybrid') { $eng.DeviceTarget = [string]$d.target }
         $eng['Dirty'] = $true
         Set-PodeState -Name 'eng' -Value $eng | Out-Null
@@ -271,7 +271,7 @@ Start-PodeServer -Browse:$Browse {
     # ---- save to Excel ----
     Add-PodeRoute -Method Post -Path '/api/save' -ScriptBlock {
         $eng = Get-PodeState -Name 'eng'
-        if (-not $eng) { Set-PodeResponseStatus -Code 400; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
+        if (-not $eng) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
         try {
             $path = Save-Engagement $eng
             $eng['Dirty'] = $false
@@ -295,14 +295,14 @@ Start-PodeServer -Browse:$Browse {
     # ---- report: view HTML ----
     Add-PodeRoute -Method Get -Path '/api/report/view' -ScriptBlock {
         $eng = Get-PodeState -Name 'eng'
-        if (-not $eng) { Set-PodeResponseStatus -Code 400; Write-PodeTextResponse -Value 'No active engagement.'; return }
+        if (-not $eng) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeTextResponse -Value 'No active engagement.'; return }
         Write-PodeHtmlResponse -Value (Build-ReportHtml $eng)
     }
 
     # ---- report: download Excel ----
     Add-PodeRoute -Method Get -Path '/api/report/excel' -ScriptBlock {
         $eng = Get-PodeState -Name 'eng'
-        if (-not $eng) { Set-PodeResponseStatus -Code 400; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
+        if (-not $eng) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
         $safe = ($eng.ClientName -replace '[^\w\-]','_')
         $name = "{0}_{1}_Status_{2}.xlsx" -f $safe,$eng.Playbook,(Get-Date -f 'yyyyMMdd')
         $out  = Join-Path (Join-Path $env:PLAYBOOK_ROOT 'reports') $name
@@ -310,13 +310,13 @@ Start-PodeServer -Browse:$Browse {
             Export-ReportExcel $eng $out | Out-Null
             Set-PodeHeader -Name 'Content-Disposition' -Value "attachment; filename=`"$name`""
             Write-PodeFileResponse -Path $out -ContentType 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        } catch { Set-PodeResponseStatus -Code 500; Write-PodeJsonResponse -Value @{ error="$($_.Exception.Message)" } }
+        } catch { Set-PodeResponseStatus -Code 500 -NoErrorPage; Write-PodeJsonResponse -Value @{ error="$($_.Exception.Message)" } }
     }
 
     # ---- report: download PDF ----
     Add-PodeRoute -Method Get -Path '/api/report/pdf' -ScriptBlock {
         $eng = Get-PodeState -Name 'eng'
-        if (-not $eng) { Set-PodeResponseStatus -Code 400; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
+        if (-not $eng) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
         $safe = ($eng.ClientName -replace '[^\w\-]','_')
         $name = "{0}_{1}_Status_{2}.pdf" -f $safe,$eng.Playbook,(Get-Date -f 'yyyyMMdd')
         $out  = Join-Path (Join-Path $env:PLAYBOOK_ROOT 'reports') $name
@@ -324,6 +324,6 @@ Start-PodeServer -Browse:$Browse {
             Export-ReportPdf $eng $out | Out-Null
             Set-PodeHeader -Name 'Content-Disposition' -Value "attachment; filename=`"$name`""
             Write-PodeFileResponse -Path $out -ContentType 'application/pdf'
-        } catch { Set-PodeResponseStatus -Code 500; Write-PodeJsonResponse -Value @{ error="$($_.Exception.Message)" } }
+        } catch { Set-PodeResponseStatus -Code 500 -NoErrorPage; Write-PodeJsonResponse -Value @{ error="$($_.Exception.Message)" } }
     }
 }
