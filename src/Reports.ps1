@@ -239,9 +239,9 @@ function Export-ReportPdf {
     $tmp  = Join-Path ([IO.Path]::GetTempPath()) ("playbook_{0}.html" -f ([guid]::NewGuid().ToString('N')))
     Set-Content -Path $tmp -Value $html -Encoding UTF8
     if (Test-Path $OutPath) { Remove-Item $OutPath -Force }
-    $args = @('--headless','--disable-gpu','--no-pdf-header-footer',
-              "--print-to-pdf=`"$OutPath`"", "`"file:///$($tmp -replace '\\','/')`"")
-    $p = Start-Process -FilePath $browser -ArgumentList $args -PassThru -WindowStyle Hidden -Wait
+    $cliArgs = @('--headless','--disable-gpu','--no-pdf-header-footer',
+                 "--print-to-pdf=`"$OutPath`"", "`"file:///$($tmp -replace '\\','/')`"")
+    $p = Start-Process -FilePath $browser -ArgumentList $cliArgs -PassThru -WindowStyle Hidden -Wait
     Remove-Item $tmp -Force -ErrorAction SilentlyContinue
     if (-not (Test-Path $OutPath)) { throw "PDF was not produced (browser exit $($p.ExitCode))." }
     $OutPath
