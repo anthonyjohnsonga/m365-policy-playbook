@@ -251,6 +251,7 @@ Inside the program folder:
 |---|---|
 | `data\masters\` | The master playbooks. **Read-only source** — never edited by the app. |
 | `data\clients\` | Saved per-client working files (`.xlsx`). Your real work. |
+| `data\clients\_backups\` | Automatic timestamped backups of each client file, kept before it's overwritten — open one in Excel if you ever need to recover a previous version. |
 | `reports\` | Generated report files (Excel / PDF) ready to send. |
 
 **Backups / moving work between PCs:** copy the files in `data\clients\`. To
