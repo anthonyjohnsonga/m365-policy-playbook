@@ -161,6 +161,10 @@ async function refreshState(){
 function showStart(){
   state.active = false;
   state.dirty = false; state.saving = false; state.sourceFile = null; state.autosaveFailed = false;
+  // Clear per-engagement view state so the next engagement starts clean. Without
+  // this, a stale section name from the previous playbook (Tier 1 vs Tier 0 use
+  // different sections) leaves the checklist empty until the user clicks a section.
+  state.section = null; state.policies = [];
   clearTimeout(_autosaveT);
   $('#startScreen').classList.remove('hidden');
   $('#app').classList.add('hidden');
