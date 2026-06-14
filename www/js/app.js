@@ -163,8 +163,22 @@ async function loadClientFiles(){
   const c = await api('/api/clients');
   const sel = $('#openFile');
   if(!c.files.length){ sel.innerHTML = '<option value="">No saved files yet</option>'; return; }
-  sel.innerHTML = c.files.map(f =>
-    `<option value="${enc(f.name)}">${enc(f.name)}  -  ${enc(f.modified)}</option>`).join('');
+  // Group by client folder (insertion order = newest first from the server);
+  // legacy flat files without a client folder fall under "Other".
+  const groups = new Map();
+  c.files.forEach(f => {
+    const key = f.client || '';
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(f);
+  });
+  const optFor = f => `<option value="${enc(f.rel || f.name)}">${enc(f.name)}  -  ${enc(f.modified)}</option>`;
+  let html = '';
+  for(const [client, files] of groups){
+    if(client) html += `<optgroup label="${enc(client)}">${files.map(optFor).join('')}</optgroup>`;
+  }
+  const flat = groups.get('') || [];
+  if(flat.length) html += `<optgroup label="Other">${flat.map(optFor).join('')}</optgroup>`;
+  sel.innerHTML = html;
 }
 
 async function refreshState(){

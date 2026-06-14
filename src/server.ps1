@@ -49,20 +49,31 @@ Start-PodeServer -Browse:$Browse {
 
     # ---- settings: read-only app folder locations ----
     Add-PodeRoute -Method Get -Path '/api/settings' -ScriptBlock {
-        $root = $env:PLAYBOOK_ROOT
+        $root       = $env:PLAYBOOK_ROOT
+        $clientsDir = Join-Path $root 'data\clients'
+        $mastersDir = Join-Path $root 'data\masters'
+        $reportsDir = Join-Path $root 'reports'
+
+        # Client files now live one level down in per-client subfolders, each
+        # with its own _backups folder. Walk data\clients recursively and split
+        # working files from backups so both counts stay accurate.
+        $clientCount = 0; $backupCount = 0
+        if (Test-Path $clientsDir) {
+            foreach ($f in (Get-ChildItem $clientsDir -Filter *.xlsx -File -Recurse -ErrorAction SilentlyContinue)) {
+                if ($f.FullName -match '[\\/]_backups[\\/]') { $backupCount++ } else { $clientCount++ }
+            }
+        }
+        $masterCount = if (Test-Path $mastersDir) { @(Get-ChildItem $mastersDir -Filter *.xlsx -File -ErrorAction SilentlyContinue).Count } else { 0 }
+        $reportCount = if (Test-Path $reportsDir) { @(Get-ChildItem $reportsDir -File -ErrorAction SilentlyContinue).Count } else { 0 }
+
         # Each entry: where the app keeps a class of files, plus a live count so
         # the panel doubles as an at-a-glance health check. Display-only for now.
-        $defs = @(
-            @{ label='Client working files'; path=(Join-Path $root 'data\clients');          filter='*.xlsx' }
-            @{ label='Master playbooks';     path=(Join-Path $root 'data\masters');          filter='*.xlsx' }
-            @{ label='Backups';              path=(Join-Path $root 'data\clients\_backups'); filter='*.xlsx' }
-            @{ label='Reports';              path=(Join-Path $root 'reports');               filter='*'      }
+        $folders = @(
+            [pscustomobject]@{ label='Client working files'; path=$clientsDir; exists=(Test-Path $clientsDir); count=$clientCount }
+            [pscustomobject]@{ label='Master playbooks';     path=$mastersDir; exists=(Test-Path $mastersDir); count=$masterCount }
+            [pscustomobject]@{ label='Backups';              path=$clientsDir; exists=(Test-Path $clientsDir); count=$backupCount }
+            [pscustomobject]@{ label='Reports';              path=$reportsDir; exists=(Test-Path $reportsDir); count=$reportCount }
         )
-        $folders = foreach ($d in $defs) {
-            $exists = Test-Path $d.path
-            $count  = if ($exists) { @(Get-ChildItem -Path $d.path -Filter $d.filter -File -ErrorAction SilentlyContinue).Count } else { 0 }
-            [pscustomobject]@{ label=$d.label; path=$d.path; exists=$exists; count=$count }
-        }
         Write-PodeJsonResponse -Value @{ root=$root; port=[int]$env:PLAYBOOK_PORT; folders=@($folders) }
     }
 
@@ -71,9 +82,22 @@ Start-PodeServer -Browse:$Browse {
         $dir = Join-Path $env:PLAYBOOK_ROOT 'data\clients'
         $files = @()
         if (Test-Path $dir) {
-            $files = Get-ChildItem $dir -Filter *.xlsx -File |
-                     Sort-Object LastWriteTime -Descending |
-                     ForEach-Object { @{ name=$_.Name; modified=$_.LastWriteTime.ToString('yyyy-MM-dd HH:mm') } }
+            # New layout: one subfolder per client (its files + a _backups
+            # folder). Legacy layout: flat .xlsx directly in data\clients. List
+            # both so older test files stay openable. 'rel' is the path relative
+            # to the clients dir, used to open the file; 'client' drives the
+            # grouped dropdown.
+            $entries = New-Object System.Collections.Generic.List[object]
+            foreach ($f in (Get-ChildItem $dir -Filter *.xlsx -File -ErrorAction SilentlyContinue)) {
+                $entries.Add([pscustomobject]@{ name=$f.Name; rel=$f.Name; client=''; modified=$f.LastWriteTime.ToString('yyyy-MM-dd HH:mm'); ts=$f.LastWriteTime })
+            }
+            foreach ($sub in (Get-ChildItem $dir -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne '_backups' })) {
+                foreach ($f in (Get-ChildItem $sub.FullName -Filter *.xlsx -File -ErrorAction SilentlyContinue)) {
+                    $entries.Add([pscustomobject]@{ name=$f.Name; rel=("{0}/{1}" -f $sub.Name, $f.Name); client=$sub.Name; modified=$f.LastWriteTime.ToString('yyyy-MM-dd HH:mm'); ts=$f.LastWriteTime })
+                }
+            }
+            $files = $entries | Sort-Object ts -Descending |
+                     ForEach-Object { @{ name=$_.name; rel=$_.rel; client=$_.client; modified=$_.modified } }
         }
         Write-PodeJsonResponse -Value @{ files = @($files) }
     }
@@ -117,7 +141,14 @@ Start-PodeServer -Browse:$Browse {
     Add-PodeRoute -Method Post -Path '/api/engagement/open' -ScriptBlock {
         $d = $WebEvent.Data
         $dir  = Join-Path $env:PLAYBOOK_ROOT 'data\clients'
-        $path = Join-Path $dir ([IO.Path]::GetFileName([string]$d.file))
+        # Accept either a flat "<file>.xlsx" or a "<client>/<file>.xlsx" path.
+        # Sanitize each segment (drop any directory parts, reject . / ..) so the
+        # resolved path can't escape the clients folder.
+        $parts = @((([string]$d.file) -replace '\\','/') -split '/' |
+                   Where-Object { $_ -and $_ -ne '.' -and $_ -ne '..' } |
+                   ForEach-Object { [IO.Path]::GetFileName($_) })
+        if ($parts.Count -lt 1 -or $parts.Count -gt 2) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='bad file path' }; return }
+        $path = Join-Path $dir ($parts -join [IO.Path]::DirectorySeparatorChar)
         if (-not (Test-Path $path)) { Set-PodeResponseStatus -Code 404 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='file not found' }; return }
         try {
             $eng = Open-Engagement -Path $path

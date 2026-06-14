@@ -347,9 +347,12 @@ function Save-Engagement {
         $safe = ($Engagement.ClientName -replace '[^\w\-]', '_')
         $stamp= Get-Date -Format 'yyyyMMdd'
         $file = "{0}_{1}_{2}.xlsx" -f $safe, $cfg.ShortName.Replace(' ',''), $stamp
-        $clientsDir = Get-ClientsPath
-        if (-not (Test-Path $clientsDir)) { New-Item -ItemType Directory -Path $clientsDir -Force | Out-Null }
-        $target = Join-Path $clientsDir $file
+        # Each client gets its own subfolder under data\clients so both tier
+        # files (and that client's backups) live together. Created on demand,
+        # the same way the clients root itself is.
+        $clientDir = Join-Path (Get-ClientsPath) $safe
+        if (-not (Test-Path $clientDir)) { New-Item -ItemType Directory -Path $clientDir -Force | Out-Null }
+        $target = Join-Path $clientDir $file
         # start from a fresh copy of the master so all formatting is preserved
         $master = Join-Path (Get-MastersPath) $cfg.MasterFile
         Copy-Item -Path $master -Destination $target -Force
