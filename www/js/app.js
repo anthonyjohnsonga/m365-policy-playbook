@@ -130,6 +130,7 @@ async function loadSettings(){
       <div class="setlabel"><span>${enc(f.label)}</span>
         ${f.exists?`<span class="setcount">${f.count} ${f.count===1?'file':'files'}</span>`:''}</div>
       <div class="setpath">${enc(f.path)}</div>
+      ${f.note?`<div class="setnote">${enc(f.note)}</div>`:''}
       ${f.exists?'':'<div class="setmissing">Not created yet — appears on first use.</div>'}
     </div>`).join('');
   $('#settingsMeta').innerHTML = `Serving at <code>http://127.0.0.1:${enc(s.port)}</code>`;

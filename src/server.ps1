@@ -71,7 +71,7 @@ Start-PodeServer -Browse:$Browse {
         $folders = @(
             [pscustomobject]@{ label='Client working files'; path=$clientsDir; exists=(Test-Path $clientsDir); count=$clientCount }
             [pscustomobject]@{ label='Master playbooks';     path=$mastersDir; exists=(Test-Path $mastersDir); count=$masterCount }
-            [pscustomobject]@{ label='Backups';              path=$clientsDir; exists=(Test-Path $clientsDir); count=$backupCount }
+            [pscustomobject]@{ label='Backups (per-client)'; path=$clientsDir; exists=(Test-Path $clientsDir); count=$backupCount; note="in each client's _backups folder" }
             [pscustomobject]@{ label='Reports';              path=$reportsDir; exists=(Test-Path $reportsDir); count=$reportCount }
         )
         Write-PodeJsonResponse -Value @{ root=$root; port=[int]$env:PLAYBOOK_PORT; folders=@($folders) }
@@ -395,7 +395,7 @@ Start-PodeServer -Browse:$Browse {
     Add-PodeRoute -Method Get -Path '/api/report/excel' -ScriptBlock {
         $eng = Get-PodeState -Name 'eng'
         if (-not $eng) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
-        $safe = ($eng.ClientName -replace '[^\w\-]','_')
+        $safe = ConvertTo-SafeClientName $eng.ClientName
         $name = "{0}_{1}_Status_{2}.xlsx" -f $safe,$eng.Playbook,(Get-Date -f 'yyyyMMdd')
         $out  = Join-Path (Join-Path $env:PLAYBOOK_ROOT 'reports') $name
         try {
@@ -410,7 +410,7 @@ Start-PodeServer -Browse:$Browse {
     Add-PodeRoute -Method Get -Path '/api/report/pdf' -ScriptBlock {
         $eng = Get-PodeState -Name 'eng'
         if (-not $eng) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
-        $safe = ($eng.ClientName -replace '[^\w\-]','_')
+        $safe = ConvertTo-SafeClientName $eng.ClientName
         $name = "{0}_{1}_Status_{2}.pdf" -f $safe,$eng.Playbook,(Get-Date -f 'yyyyMMdd')
         $out  = Join-Path (Join-Path $env:PLAYBOOK_ROOT 'reports') $name
         try {

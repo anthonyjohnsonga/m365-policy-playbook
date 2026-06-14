@@ -56,6 +56,15 @@ function Get-PlaybookConfig {
 function Get-MastersPath { Join-Path $PSScriptRoot '..\data\masters' }
 function Get-ClientsPath { Join-Path $PSScriptRoot '..\data\clients' }
 
+# Sanitize a client name into the token used for BOTH its subfolder and its
+# file-name prefix. The save path and the companion lookup must derive this the
+# same way (or companion lookup breaks for a never-saved engagement), so it
+# lives in one place.
+function ConvertTo-SafeClientName {
+    param([string]$Name)
+    $Name -replace '[^\w\-]', '_'
+}
+
 # --- Impact normalization ----------------------------------------------------
 function ConvertTo-ImpactClass {
     param([string]$Impact)
@@ -325,7 +334,7 @@ function Find-CompanionFile {
     # Prefer the active file's own folder; for a brand-new (never-saved)
     # engagement, fall back to the client folder derived from the client name.
     $folder = if ($Engagement.SourceFile) { Split-Path $Engagement.SourceFile -Parent }
-              else { Join-Path (Get-ClientsPath) ($Engagement.ClientName -replace '[^\w\-]','_') }
+              else { Join-Path (Get-ClientsPath) (ConvertTo-SafeClientName $Engagement.ClientName) }
     if (-not (Test-Path $folder)) { return $null }
     $candidates = Get-ChildItem $folder -Filter *.xlsx -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending
     foreach ($c in $candidates) {
@@ -372,7 +381,7 @@ function Save-Engagement {
     # Determine target client file
     $target = $Engagement.SourceFile
     if (-not $target) {
-        $safe = ($Engagement.ClientName -replace '[^\w\-]', '_')
+        $safe = ConvertTo-SafeClientName $Engagement.ClientName
         $stamp= Get-Date -Format 'yyyyMMdd'
         $file = "{0}_{1}_{2}.xlsx" -f $safe, $cfg.ShortName.Replace(' ',''), $stamp
         # Each client gets its own subfolder under data\clients so both tier
