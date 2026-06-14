@@ -77,6 +77,14 @@ anything that moves a folder. Copying the folder also brings:
 - `data\masters\` — the two master playbooks (Tier 1 and Tier 0).
 - `data\clients\` — any saved client engagements (so in-progress work travels too).
 
+> **Getting it from GitHub instead?** A `git clone` or ZIP download will **not**
+> include the `data\clients\` or `reports\` folders (they're intentionally kept
+> out of source control). That's fine — the app **creates them automatically**
+> the first time you run it. The master playbooks in `data\masters\` *are*
+> included, so a fresh download is ready to use. (To carry existing client work
+> across, copy the `.xlsx` files from the old machine's `data\clients\` — see
+> section 10.)
+
 > Keep the folder structure intact. Don't move `Start-PlaybookApp.ps1` out of
 > the folder — it expects the `src`, `www`, and `data` folders next to it.
 

@@ -86,6 +86,12 @@ never modified — a fresh copy is made for each client on first save.
 > **Version control:** `data\clients\` (client working files) and `reports\`
 > (generated output) are excluded via `.gitignore` and are never committed.
 > Only the app code and the read-only master playbooks are tracked.
+>
+> **Self-initializing:** because those two folders aren't in the repo, a fresh
+> clone or ZIP download won't contain them — the app **creates them
+> automatically** on first run. Just `git clone` (or download + extract) and run
+> `Launch.cmd`; the master playbooks ship with the download, and the client/report
+> folders are created on demand.
 
 [Pode]: https://badgerati.github.io/Pode/
 [ImportExcel]: https://github.com/dfinke/ImportExcel
