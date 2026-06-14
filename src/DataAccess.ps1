@@ -293,6 +293,34 @@ function Open-Engagement {
     }
 }
 
+# --- Keep timestamped backups of a client file before it is overwritten ------
+#  Best-effort: a backup hiccup must never block a save. Throttled so frequent
+#  autosaves don't spawn a copy every time, and pruned to the newest N. Backups
+#  live in a '_backups' subfolder, which is not listed as an openable client file.
+function Backup-ClientFile {
+    param([Parameter(Mandatory)][string]$Path)
+    $throttleMinutes = 10
+    $keep            = 15
+    try {
+        if (-not (Test-Path $Path)) { return }
+        $bakDir = Join-Path (Split-Path $Path -Parent) '_backups'
+        if (-not (Test-Path $bakDir)) { New-Item -ItemType Directory -Path $bakDir -Force | Out-Null }
+        $base    = [IO.Path]::GetFileNameWithoutExtension($Path)
+        $pattern = '^' + [regex]::Escape($base) + '_\d{8}_\d{6}\.xlsx$'
+        $existing = @(Get-ChildItem $bakDir -Filter '*.xlsx' -File -ErrorAction SilentlyContinue |
+                     Where-Object { $_.Name -match $pattern } | Sort-Object LastWriteTime -Descending)
+        # throttle: skip if this file was already backed up very recently
+        if ($existing.Count -and ((Get-Date) - $existing[0].LastWriteTime).TotalMinutes -lt $throttleMinutes) { return }
+        $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+        Copy-Item -Path $Path -Destination (Join-Path $bakDir "${base}_$stamp.xlsx") -Force
+        # prune: keep only the newest $keep backups for this file
+        Get-ChildItem $bakDir -Filter '*.xlsx' -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -match $pattern } |
+            Sort-Object LastWriteTime -Descending | Select-Object -Skip $keep |
+            Remove-Item -Force -ErrorAction SilentlyContinue
+    } catch { }   # best-effort; never let a backup error block the save
+}
+
 # --- Save engagement back to an Excel working file ---------------------------
 function Save-Engagement {
     param([Parameter(Mandatory)]$Engagement)
@@ -311,6 +339,10 @@ function Save-Engagement {
         # start from a fresh copy of the master so all formatting is preserved
         $master = Join-Path (Get-MastersPath) $cfg.MasterFile
         Copy-Item -Path $master -Destination $target -Force
+    }
+    elseif (Test-Path $target) {
+        # An existing file is about to be overwritten — snapshot it first.
+        Backup-ClientFile -Path $target
     }
 
     $pkg = Open-ExcelPackage -Path $target

@@ -277,7 +277,19 @@ Start-PodeServer -Browse:$Browse {
             $eng['Dirty'] = $false
             Set-PodeState -Name 'eng' -Value $eng | Out-Null
             Write-PodeJsonResponse -Value @{ ok=$true; file=(Split-Path $path -Leaf) }
-        } catch { Set-PodeResponseStatus -Code 500; Write-PodeJsonResponse -Value @{ error="$($_.Exception.Message)" } }
+        } catch {
+            $msg = "$($_.Exception.Message)"
+            if ($msg -match 'being used by another process|cannot access the file|denied') {
+                # File is open/locked (typically the .xlsx is open in Excel). Tell the
+                # user plainly; the engagement stays dirty so autosave retries shortly.
+                # -NoErrorPage so our JSON body is returned instead of Pode's HTML page.
+                Set-PodeResponseStatus -Code 409 -NoErrorPage
+                Write-PodeJsonResponse -Value @{ error='This client file is open in Excel. Close it and your work will save automatically.' }
+            } else {
+                Set-PodeResponseStatus -Code 500 -NoErrorPage
+                Write-PodeJsonResponse -Value @{ error=$msg }
+            }
+        }
     }
 
     # ---- report: view HTML ----
