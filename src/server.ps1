@@ -18,6 +18,12 @@ Start-PodeServer -Browse:$Browse {
     $src     = Join-Path $root 'src'
     $www     = Join-Path $root 'www'
 
+    # These runtime folders are git-ignored, so they're absent on a fresh
+    # clone/download. Create them up front so the first save / report works.
+    foreach ($d in @((Join-Path $root 'data\clients'), (Join-Path $root 'reports'))) {
+        if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null }
+    }
+
     Add-PodeEndpoint -Address 127.0.0.1 -Port ([int]$env:PLAYBOOK_PORT) -Protocol Http
     Import-PodeModule -Path (Join-Path $src 'PlaybookCore.psm1')
     New-PodeLoggingMethod -Terminal | Enable-PodeErrorLogging

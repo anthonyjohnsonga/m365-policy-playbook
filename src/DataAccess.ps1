@@ -305,7 +305,9 @@ function Save-Engagement {
         $safe = ($Engagement.ClientName -replace '[^\w\-]', '_')
         $stamp= Get-Date -Format 'yyyyMMdd'
         $file = "{0}_{1}_{2}.xlsx" -f $safe, $cfg.ShortName.Replace(' ',''), $stamp
-        $target = Join-Path (Get-ClientsPath) $file
+        $clientsDir = Get-ClientsPath
+        if (-not (Test-Path $clientsDir)) { New-Item -ItemType Directory -Path $clientsDir -Force | Out-Null }
+        $target = Join-Path $clientsDir $file
         # start from a fresh copy of the master so all formatting is preserved
         $master = Join-Path (Get-MastersPath) $cfg.MasterFile
         Copy-Item -Path $master -Destination $target -Force
