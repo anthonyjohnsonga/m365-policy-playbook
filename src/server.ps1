@@ -21,7 +21,7 @@ Start-PodeServer -Browse:$Browse {
 
     # These runtime folders are git-ignored, so they're absent on a fresh
     # clone/download. Create them up front so the first save / report works.
-    foreach ($d in @((Join-Path $root 'data\clients'), (Join-Path $root 'reports'))) {
+    foreach ($d in @((Join-Path $root 'data' 'clients'), (Join-Path $root 'reports'))) {
         if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null }
     }
 
@@ -35,7 +35,7 @@ Start-PodeServer -Browse:$Browse {
 
     # ---- SPA shell ----
     Add-PodeRoute -Method Get -Path '/' -ScriptBlock {
-        Write-PodeFileResponse -Path (Join-Path $env:PLAYBOOK_ROOT 'www\index.html')
+        Write-PodeFileResponse -Path (Join-Path $env:PLAYBOOK_ROOT 'www' 'index.html')
     }
 
     # ---- config: playbooks for New Engagement form ----
@@ -50,8 +50,8 @@ Start-PodeServer -Browse:$Browse {
     # ---- settings: read-only app folder locations ----
     Add-PodeRoute -Method Get -Path '/api/settings' -ScriptBlock {
         $root       = $env:PLAYBOOK_ROOT
-        $clientsDir = Join-Path $root 'data\clients'
-        $mastersDir = Join-Path $root 'data\masters'
+        $clientsDir = Join-Path $root 'data' 'clients'
+        $mastersDir = Join-Path $root 'data' 'masters'
         $reportsDir = Join-Path $root 'reports'
 
         # Client files now live one level down in per-client subfolders, each
@@ -79,7 +79,7 @@ Start-PodeServer -Browse:$Browse {
 
     # ---- saved client files ----
     Add-PodeRoute -Method Get -Path '/api/clients' -ScriptBlock {
-        $dir = Join-Path $env:PLAYBOOK_ROOT 'data\clients'
+        $dir = Join-Path $env:PLAYBOOK_ROOT 'data' 'clients'
         $files = @()
         if (Test-Path $dir) {
             # New layout: one subfolder per client (its files + a _backups
@@ -140,7 +140,7 @@ Start-PodeServer -Browse:$Browse {
     # ---- open saved engagement ----
     Add-PodeRoute -Method Post -Path '/api/engagement/open' -ScriptBlock {
         $d = $WebEvent.Data
-        $dir  = Join-Path $env:PLAYBOOK_ROOT 'data\clients'
+        $dir  = Join-Path $env:PLAYBOOK_ROOT 'data' 'clients'
         # Accept either a flat "<file>.xlsx" or a "<client>/<file>.xlsx" path.
         # Sanitize each segment (drop any directory parts, reject . / ..) so the
         # resolved path can't escape the clients folder.
