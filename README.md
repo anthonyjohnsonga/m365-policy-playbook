@@ -4,6 +4,7 @@
 ![Server: Pode](https://img.shields.io/badge/server-Pode-1f6feb)
 ![Excel: ImportExcel](https://img.shields.io/badge/Excel-ImportExcel-217346)
 ![Runs locally](https://img.shields.io/badge/runs-127.0.0.1%3A8080-444)
+![Platforms: Windows & macOS](https://img.shields.io/badge/platforms-Windows%20%26%20macOS-0078D4)
 
 A PowerShell web app for walking clients through their Microsoft 365 policy
 baselines during a meeting: explain each policy in plain English, show **who it
@@ -12,6 +13,7 @@ impacts**, track status live, and produce shareable status reports.
 Built on **PowerShell 7 + [Pode]** (web server) and **[ImportExcel]** (Excel
 round-trip). Runs entirely on your own machine at `http://127.0.0.1:8080` —
 nothing is installed on the client tenant and nothing leaves your computer.
+Runs on both **Windows and macOS**.
 
 ## What it does
 
@@ -32,18 +34,21 @@ nothing is installed on the client tenant and nothing leaves your computer.
 
 ## Requirements
 
-- Windows, **PowerShell 7+**
+- **Windows or macOS**, **PowerShell 7+**
 - Modules `Pode` and `ImportExcel` (the launcher offers to install them)
-- Microsoft Edge or Chrome (used to generate PDFs)
+- Microsoft Edge, Chrome, or Chromium (used to generate PDFs)
 
 ## Run
 
-**Easiest:** double-click **`Launch.cmd`**.
+**Easiest:**
+- **Windows** – double-click **`Launch.cmd`**.
+- **macOS** – double-click **`Launch.command`** (first time only: right-click →
+  *Open*, or run `chmod +x Launch.command` if you downloaded the ZIP).
 
-**Or from PowerShell 7:**
+**Or from PowerShell 7 (Windows or macOS):**
 ```powershell
-.\Start-PlaybookApp.ps1            # starts server + opens browser
-.\Start-PlaybookApp.ps1 -Port 9090 -NoBrowser
+./Start-PlaybookApp.ps1            # starts server + opens browser
+./Start-PlaybookApp.ps1 -Port 9090 -NoBrowser
 ```
 
 The browser opens **automatically once the server is ready** (handled by Pode,
@@ -66,7 +71,8 @@ stop.
 ## Project layout
 
 ```
-Launch.cmd                One-click launcher (checks for PowerShell 7)
+Launch.cmd                One-click launcher for Windows (checks for PowerShell 7)
+Launch.command            One-click launcher for macOS
 Start-PlaybookApp.ps1     Dependency check, then starts the server
 src\
   server.ps1              Pode routes (pages + JSON API); opens browser when ready
