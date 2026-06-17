@@ -24,7 +24,7 @@ reports (HTML / Excel / PDF).
 
 | Requirement | Why | Notes |
 |---|---|---|
-| **Windows 10 or 11** | Host OS | macOS/Linux can work but this guide is Windows-focused. |
+| **Windows 10 or 11** | Host OS | macOS also works — see **section 13**. This guide is otherwise Windows-focused. |
 | **PowerShell 7 or newer** | Runs the app | This is **NOT** the blue "Windows PowerShell 5.1" that ships with Windows. See step 3. |
 | **Internet (first run only)** | Installs 2 helper modules | After the first run it works offline. An offline option is in step 8. |
 | **Microsoft Edge or Google Chrome** | Generates PDF reports | Edge is built into Windows, so this is normally already covered. |
@@ -295,6 +295,36 @@ routine is simply:
 2. Run `.\Start-PlaybookApp.ps1`.
 3. Work in the browser; **Save to Excel** as you go.
 4. Press **Ctrl + C** in the PowerShell window when finished.
+
+---
+
+## 13. Running on macOS
+
+The app runs on a Mac too. The steps mirror Windows; only a few specifics differ.
+
+1. **Install PowerShell 7** (once):
+   - Homebrew: `brew install --cask powershell`
+   - Or download the `.pkg` from <https://aka.ms/powershell-release?tag=stable>.
+   - Confirm: open **Terminal** and run `pwsh -v`.
+2. **Copy the program folder** onto the Mac (same as section 4).
+3. **Start the app** — two ways:
+   - **Double-click `Launch.command`** in Finder. The first time, macOS may block
+     it ("cannot be opened because it is from an unidentified developer") —
+     right-click it → **Open** → **Open**. If double-clicking does nothing, the
+     executable flag was lost while copying: open Terminal in the folder and run
+     `chmod +x Launch.command`, then try again.
+   - **Or from Terminal:** `cd` into the folder and run `./Start-PlaybookApp.ps1`
+     (or `pwsh Start-PlaybookApp.ps1`).
+4. The first run installs the **Pode** and **ImportExcel** modules (answer **Y**;
+   needs internet, ~1 minute). The offline method in section 8 works on macOS too.
+5. Your browser opens to **http://127.0.0.1:8080**. If it doesn't, open it
+   manually.
+6. **PDF reports** need **Microsoft Edge** or **Google Chrome** installed in
+   `/Applications` (Excel and HTML reports work without them).
+
+Everything else — saving to Excel, reports, backups, per-client folders — works
+the same as on Windows. There is **no `Set-ExecutionPolicy` step** on macOS; that
+setting is Windows-only.
 
 ---
 

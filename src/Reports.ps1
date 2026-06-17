@@ -236,12 +236,22 @@ function Limit-ReportFiles {
 
 # --- PDF export (via Edge / Chrome headless) ---------------------------------
 function Find-HeadlessBrowser {
-    $cands = @(
-        "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe"
-        "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
-        "$env:ProgramFiles\Google\Chrome\Application\chrome.exe"
-        "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe"
-    )
+    if ($IsMacOS) {
+        # macOS keeps the executable inside the .app bundle.
+        $cands = @(
+            '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'
+            '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+            '/Applications/Chromium.app/Contents/MacOS/Chromium'
+        )
+    }
+    else {
+        $cands = @(
+            "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe"
+            "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
+            "$env:ProgramFiles\Google\Chrome\Application\chrome.exe"
+            "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe"
+        )
+    }
     foreach ($c in $cands) { if (Test-Path $c) { return $c } }
     $null
 }
@@ -254,10 +264,25 @@ function Export-ReportPdf {
     $tmp  = Join-Path ([IO.Path]::GetTempPath()) ("playbook_{0}.html" -f ([guid]::NewGuid().ToString('N')))
     Set-Content -Path $tmp -Value $html -Encoding UTF8
     if (Test-Path $OutPath) { Remove-Item $OutPath -Force }
-    $cliArgs = @('--headless','--disable-gpu','--no-pdf-header-footer',
-                 "--print-to-pdf=`"$OutPath`"", "`"file:///$($tmp -replace '\\','/')`"")
-    $p = Start-Process -FilePath $browser -ArgumentList $cliArgs -PassThru -WindowStyle Hidden -Wait
+
+    # Build a file:// URL that is valid on both platforms. A Windows path
+    # (C:\...) needs a slash before the drive letter (file:///C:/...); a macOS
+    # path already begins with '/'. Hand-building "file:///$path" added an extra
+    # slash to macOS absolute paths, so normalize to exactly one leading slash.
+    $norm = ($tmp -replace '\\','/') -replace ' ','%20'
+    if ($norm -notmatch '^/') { $norm = '/' + $norm }
+    $fileUri = 'file://' + $norm
+
+    # Invoke with the call operator and a clean argument list. PowerShell passes
+    # each element as its own argument per-platform, so paths containing spaces
+    # (e.g. the "Microsoft Web App" folder) work without the manual quoting that
+    # gets passed through literally — and breaks the path — on macOS. --headless
+    # means no window appears, so -WindowStyle Hidden (Windows-only, unsupported
+    # on macOS) is no longer needed.
+    & $browser '--headless' '--disable-gpu' '--no-pdf-header-footer' "--print-to-pdf=$OutPath" $fileUri 2>$null | Out-Null
+    $exit = $LASTEXITCODE
+
     Remove-Item $tmp -Force -ErrorAction SilentlyContinue
-    if (-not (Test-Path $OutPath)) { throw "PDF was not produced (browser exit $($p.ExitCode))." }
+    if (-not (Test-Path $OutPath)) { throw "PDF was not produced (browser exit $exit)." }
     $OutPath
 }

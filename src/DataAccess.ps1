@@ -53,8 +53,8 @@ function Get-PlaybookConfig {
     }
 }
 
-function Get-MastersPath { Join-Path $PSScriptRoot '..\data\masters' }
-function Get-ClientsPath { Join-Path $PSScriptRoot '..\data\clients' }
+function Get-MastersPath { Join-Path $PSScriptRoot '..' 'data' 'masters' }
+function Get-ClientsPath { Join-Path $PSScriptRoot '..' 'data' 'clients' }
 
 # Sanitize a client name into the token used for BOTH its subfolder and its
 # file-name prefix. The save path and the companion lookup must derive this the

@@ -40,4 +40,4 @@ Write-Host "Press Ctrl+C in this window to stop." -ForegroundColor DarkGray
 # race without spawning a separate PowerShell process or opening a raw socket
 # (the latter looks like a reverse shell to Defender for Endpoint).
 
-& (Join-Path $here 'src\server.ps1') -Port $Port -Browse:(-not $NoBrowser)
+& (Join-Path $here 'src' 'server.ps1') -Port $Port -Browse:(-not $NoBrowser)

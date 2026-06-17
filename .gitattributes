@@ -1,0 +1,5 @@
+# Shell scripts must keep LF line endings so they run on macOS/Linux even when
+# the repo is used on Windows (core.autocrlf would otherwise hand them CRLF,
+# which breaks the shebang and produces "bad interpreter" / "\r" errors).
+*.command text eol=lf
+*.sh      text eol=lf
