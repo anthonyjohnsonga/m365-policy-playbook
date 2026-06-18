@@ -221,7 +221,11 @@ async function submitMaster(e){
     $('#mSectionNew').classList.add('hidden');
     $('#mDup').classList.add('hidden');
     await loadMasterMeta();   // refresh sections/names + count
-  }catch(err){ toast(err.message, true); $('#mSubmit').disabled = false; }
+  }catch(err){ toast(err.message, true); }
+  // Always re-enable: form.reset() doesn't fire input, so checkMasterDup won't
+  // run to clear the disable — without this the button stays dead after a
+  // successful add until the user types in the name field again.
+  finally{ $('#mSubmit').disabled = false; }
 }
 
 /* ---------- boot ---------- */
