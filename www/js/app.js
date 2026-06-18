@@ -178,7 +178,7 @@ async function loadMasterMeta(){
     const m = await api('/api/master/meta?tier=Tier1');
     _masterNames = (m.policyNames||[]).map(n => (n||'').toString().trim().toLowerCase());
     $('#mSection').innerHTML =
-      m.sections.map(s => `<option value="${enc(s)}">${enc(s)}</option>`).join('')
+      (m.sections || []).map(s => `<option value="${enc(s)}">${enc(s)}</option>`).join('')
       + `<option value="__new__">➕ New section…</option>`;
     $('#mImpact').innerHTML = '<option value="">Select…</option>'
       + (m.impactOptions||[]).map(i => `<option value="${enc(i)}">${enc(i)}</option>`).join('');
