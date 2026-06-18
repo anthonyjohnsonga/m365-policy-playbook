@@ -86,9 +86,24 @@ async function api(path, opts){
 }
 
 function toast(msg, isErr){
-  const t = $('#toast'); t.textContent = msg;
-  t.className = 'toast show' + (isErr ? ' err' : '');
-  clearTimeout(t._t); t._t = setTimeout(()=> t.className='toast', 2600);
+  const t = $('#toast');
+  clearTimeout(t._t);
+  if(isErr){
+    // Errors stay until dismissed so they can actually be read / noted down.
+    // Build with a close button instead of auto-fading after a couple seconds.
+    t.textContent = '';
+    const span = document.createElement('span'); span.textContent = msg;
+    const x = document.createElement('button');
+    x.className = 'toast-x'; x.type = 'button';
+    x.setAttribute('aria-label', 'Dismiss'); x.textContent = '×';
+    x.onclick = ()=> t.className = 'toast';
+    t.append(span, x);
+    t.className = 'toast show err';
+  } else {
+    t.textContent = msg;
+    t.className = 'toast show';
+    t._t = setTimeout(()=> t.className='toast', 2600);
+  }
 }
 
 /* ---------- theme ---------- */
