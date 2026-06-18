@@ -344,32 +344,46 @@ function Find-CompanionFile {
     return $null
 }
 
+# --- Timestamped backups of an .xlsx into a sibling '_backups' folder --------
+#  Shared by client saves and master edits. Copies the file to
+#  '<dir>\_backups\<base>_<yyyyMMdd_HHmmss>.xlsx' and prunes that file's backups
+#  to the newest -Keep. With -ThrottleMinutes > 0, skips if this file was backed
+#  up within that window (so frequent autosaves don't spawn a copy every time).
+#  Errors are NOT swallowed here — the caller decides whether a backup failure
+#  is fatal.
+function Backup-ExcelFile {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [int]$Keep = 15,
+        [int]$ThrottleMinutes = 0
+    )
+    if (-not (Test-Path $Path)) { return }
+    $bakDir = Join-Path (Split-Path $Path -Parent) '_backups'
+    if (-not (Test-Path $bakDir)) { New-Item -ItemType Directory -Path $bakDir -Force | Out-Null }
+    $base    = [IO.Path]::GetFileNameWithoutExtension($Path)
+    $pattern = '^' + [regex]::Escape($base) + '_\d{8}_\d{6}\.xlsx$'
+    if ($ThrottleMinutes -gt 0) {
+        $recent = Get-ChildItem $bakDir -Filter '*.xlsx' -File -ErrorAction SilentlyContinue |
+                  Where-Object { $_.Name -match $pattern } |
+                  Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if ($recent -and ((Get-Date) - $recent.LastWriteTime).TotalMinutes -lt $ThrottleMinutes) { return }
+    }
+    $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+    Copy-Item -Path $Path -Destination (Join-Path $bakDir "${base}_$stamp.xlsx") -Force
+    # prune: keep only the newest $Keep backups for this file
+    Get-ChildItem $bakDir -Filter '*.xlsx' -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match $pattern } |
+        Sort-Object LastWriteTime -Descending | Select-Object -Skip $Keep |
+        Remove-Item -Force -ErrorAction SilentlyContinue
+}
+
 # --- Keep timestamped backups of a client file before it is overwritten ------
 #  Best-effort: a backup hiccup must never block a save. Throttled so frequent
-#  autosaves don't spawn a copy every time, and pruned to the newest N. Backups
-#  live in a '_backups' subfolder, which is not listed as an openable client file.
+#  autosaves don't spawn a copy every time, pruned to the newest N. Backups live
+#  in a '_backups' subfolder, which is not listed as an openable client file.
 function Backup-ClientFile {
     param([Parameter(Mandatory)][string]$Path)
-    $throttleMinutes = 10
-    $keep            = 15
-    try {
-        if (-not (Test-Path $Path)) { return }
-        $bakDir = Join-Path (Split-Path $Path -Parent) '_backups'
-        if (-not (Test-Path $bakDir)) { New-Item -ItemType Directory -Path $bakDir -Force | Out-Null }
-        $base    = [IO.Path]::GetFileNameWithoutExtension($Path)
-        $pattern = '^' + [regex]::Escape($base) + '_\d{8}_\d{6}\.xlsx$'
-        $existing = @(Get-ChildItem $bakDir -Filter '*.xlsx' -File -ErrorAction SilentlyContinue |
-                     Where-Object { $_.Name -match $pattern } | Sort-Object LastWriteTime -Descending)
-        # throttle: skip if this file was already backed up very recently
-        if ($existing.Count -and ((Get-Date) - $existing[0].LastWriteTime).TotalMinutes -lt $throttleMinutes) { return }
-        $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
-        Copy-Item -Path $Path -Destination (Join-Path $bakDir "${base}_$stamp.xlsx") -Force
-        # prune: keep only the newest $keep backups for this file
-        Get-ChildItem $bakDir -Filter '*.xlsx' -File -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -match $pattern } |
-            Sort-Object LastWriteTime -Descending | Select-Object -Skip $keep |
-            Remove-Item -Force -ErrorAction SilentlyContinue
-    } catch { }   # best-effort; never let a backup error block the save
+    try { Backup-ExcelFile -Path $Path -Keep 15 -ThrottleMinutes 10 } catch { }
 }
 
 # --- Save engagement back to an Excel working file ---------------------------
@@ -495,21 +509,12 @@ function Save-Engagement {
 
 # Snapshot a master before an admin edit. Unlike Backup-ClientFile this is never
 # throttled — every master change is deliberate and must be individually
-# recoverable. Backups live in data\masters\_backups (git-ignored).
+# recoverable — and errors are NOT swallowed: if we can't snapshot the master
+# first, the edit aborts rather than proceed without a backup. Backups live in
+# data\masters\_backups (git-ignored).
 function Backup-MasterFile {
     param([Parameter(Mandatory)][string]$Path)
-    $keep = 20
-    if (-not (Test-Path $Path)) { return }
-    $bakDir = Join-Path (Split-Path $Path -Parent) '_backups'
-    if (-not (Test-Path $bakDir)) { New-Item -ItemType Directory -Path $bakDir -Force | Out-Null }
-    $base  = [IO.Path]::GetFileNameWithoutExtension($Path)
-    $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
-    Copy-Item -Path $Path -Destination (Join-Path $bakDir "${base}_$stamp.xlsx") -Force
-    $pattern = '^' + [regex]::Escape($base) + '_\d{8}_\d{6}\.xlsx$'
-    Get-ChildItem $bakDir -Filter '*.xlsx' -File -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -match $pattern } |
-        Sort-Object LastWriteTime -Descending | Select-Object -Skip $keep |
-        Remove-Item -Force -ErrorAction SilentlyContinue
+    Backup-ExcelFile -Path $Path -Keep 20
 }
 
 # Data the Add-Policy form needs: existing sections (for the dropdown), the valid
