@@ -488,6 +488,128 @@ function Save-Engagement {
     return $target
 }
 
+# --- Admin: edit the master playbook -----------------------------------------
+#  Adding a policy to a master flows into every NEW engagement (which copies the
+#  master). Existing client files are independent snapshots and are unaffected.
+#  v1 supports Tier 1 only; Tier 0's master uses a different column layout.
+
+# Snapshot a master before an admin edit. Unlike Backup-ClientFile this is never
+# throttled — every master change is deliberate and must be individually
+# recoverable. Backups live in data\masters\_backups (git-ignored).
+function Backup-MasterFile {
+    param([Parameter(Mandatory)][string]$Path)
+    $keep = 20
+    if (-not (Test-Path $Path)) { return }
+    $bakDir = Join-Path (Split-Path $Path -Parent) '_backups'
+    if (-not (Test-Path $bakDir)) { New-Item -ItemType Directory -Path $bakDir -Force | Out-Null }
+    $base  = [IO.Path]::GetFileNameWithoutExtension($Path)
+    $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+    Copy-Item -Path $Path -Destination (Join-Path $bakDir "${base}_$stamp.xlsx") -Force
+    $pattern = '^' + [regex]::Escape($base) + '_\d{8}_\d{6}\.xlsx$'
+    Get-ChildItem $bakDir -Filter '*.xlsx' -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match $pattern } |
+        Sort-Object LastWriteTime -Descending | Select-Object -Skip $keep |
+        Remove-Item -Force -ErrorAction SilentlyContinue
+}
+
+# Data the Add-Policy form needs: existing sections (for the dropdown), the valid
+# impact vocabulary, and existing policy names (so the UI can warn on duplicates).
+function Get-MasterInfo {
+    param([string]$PlaybookKey = 'Tier1')
+    if ($PlaybookKey -ne 'Tier1') { throw "Master editing currently supports Tier 1 only." }
+    $cfg  = (Get-PlaybookConfig)[$PlaybookKey]
+    $path = Join-Path (Get-MastersPath) $cfg.MasterFile
+    $rows = Import-Excel -Path $path -WorksheetName $cfg.Sheet -StartRow 2
+    $pols = @($rows | Where-Object { $_.'Policy Name' })
+    [pscustomobject]@{
+        tier          = $PlaybookKey
+        masterFile    = $cfg.MasterFile
+        sections      = @($pols | Select-Object -ExpandProperty 'Section' -Unique | Where-Object { $_ })
+        impactOptions = @('HIGH','MEDIUM','LOW/NONE')
+        policyNames   = @($pols | Select-Object -ExpandProperty 'Policy Name')
+        count         = $pols.Count
+    }
+}
+
+# Append one new policy row to the Tier 1 master, preserving sheet formatting.
+# Writes by header name (not fixed columns) so a column reorder can't misdirect
+# the write, and copies the previous row's cell styles so the new row matches.
+function Add-MasterPolicy {
+    param(
+        [Parameter(Mandatory)][hashtable]$Policy,
+        [string]$PlaybookKey = 'Tier1'
+    )
+    if ($PlaybookKey -ne 'Tier1') { throw "Master editing currently supports Tier 1 only." }
+    $cfg  = (Get-PlaybookConfig)[$PlaybookKey]
+    $path = Join-Path (Get-MastersPath) $cfg.MasterFile
+
+    $section = ([string]$Policy.Section).Trim()
+    $name    = ([string]$Policy.PolicyName).Trim()
+    $impact  = ([string]$Policy.Impact).Trim().ToUpper()
+    if (-not $section) { throw "Section is required." }
+    if (-not $name)    { throw "Policy Name is required." }
+    if ($impact -notin 'HIGH','MEDIUM','LOW/NONE') { throw "Impact must be HIGH, MEDIUM, or LOW/NONE." }
+
+    # Reject a duplicate name (case-insensitive) before touching the file.
+    foreach ($r in (Import-Excel -Path $path -WorksheetName $cfg.Sheet -StartRow 2)) {
+        if (([string]$r.'Policy Name').Trim().ToLower() -eq $name.ToLower()) {
+            throw "A policy named '$name' already exists in the Tier 1 master."
+        }
+    }
+
+    Backup-MasterFile -Path $path
+
+    $pkg = Open-ExcelPackage -Path $path
+    try {
+        $ws        = $pkg.Workbook.Worksheets[$cfg.Sheet]
+        $headerRow = 2
+        $lastCol   = $ws.Dimension.End.Column
+        $col = @{}
+        for ($c = 1; $c -le $lastCol; $c++) {
+            $h = [string]$ws.Cells[$headerRow,$c].Value
+            if ($h) { $col[$h.Trim().ToLower()] = $c }
+        }
+        $pnCol = $col['policy name']
+        if (-not $pnCol) { throw "Could not find a 'Policy Name' column in the master." }
+
+        # Find the last row that actually holds a policy, and the highest # so far,
+        # so we append after real data (not trailing formatted-but-empty rows).
+        $endRow = $ws.Dimension.End.Row
+        $lastDataRow = $headerRow
+        $maxNum = 0
+        for ($r = $headerRow + 1; $r -le $endRow; $r++) {
+            if ([string]$ws.Cells[$r,$pnCol].Value) {
+                $lastDataRow = $r
+                if ($col['#']) { $n = $ws.Cells[$r,$col['#']].Value; if ($n -as [int]) { $maxNum = [math]::Max($maxNum,[int]$n) } }
+            }
+        }
+        $newRow = $lastDataRow + 1
+
+        # Inherit the previous row's styling so the new row matches in Excel.
+        for ($c = 1; $c -le $lastCol; $c++) { $ws.Cells[$newRow,$c].StyleID = $ws.Cells[$lastDataRow,$c].StyleID }
+
+        $set = {
+            param($hdr,$val)
+            $k = $hdr.ToLower()
+            if ($col.ContainsKey($k)) { $ws.Cells[$newRow,$col[$k]].Value = [string]$val }
+        }
+        if ($col['#']) { $ws.Cells[$newRow,$col['#']].Value = $maxNum + 1 }
+        & $set 'Section'                    $section
+        & $set 'Policy Name'                $name
+        & $set 'Inforcer Impact'            $impact
+        & $set 'What It Does'               $Policy.WhatItDoes
+        & $set 'What Users Will Experience' $Policy.WhatUsersExperience
+        & $set 'Portal Path'                $Policy.PortalPath
+        & $set 'Auto-Remediable'            $Policy.AutoRemediable
+        & $set 'License'                    $Policy.License
+
+        Close-ExcelPackage $pkg
+    }
+    catch { Close-ExcelPackage $pkg -NoSave; throw }
+
+    [pscustomobject]@{ policyName = $name; section = $section }
+}
+
 # --- Which statuses count as "complete" (progress %) -------------------------
 function Get-DoneStatusSet {
     param([Parameter(Mandatory)][string]$PlaybookKey)

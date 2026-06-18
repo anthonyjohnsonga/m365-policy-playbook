@@ -8,6 +8,9 @@
 # Saved client engagement files - never publish (contains client data)
 /data/clients/
 
+# Automatic backups taken before each master edit (admin "Manage master")
+/data/masters/_backups/
+
 # OS / editor cruft
 Thumbs.db
 desktop.ini

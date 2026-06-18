@@ -384,6 +384,36 @@ Start-PodeServer -Browse:$Browse {
         }
     }
 
+    # ---- admin: master meta (sections, impacts, existing names) ----
+    Add-PodeRoute -Method Get -Path '/api/master/meta' -ScriptBlock {
+        $tier = [string]$WebEvent.Query['tier']; if (-not $tier) { $tier = 'Tier1' }
+        try { Write-PodeJsonResponse -Value (Get-MasterInfo -PlaybookKey $tier) }
+        catch { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error="$($_.Exception.Message)" } }
+    }
+
+    # ---- admin: add a policy to the master ----
+    Add-PodeRoute -Method Post -Path '/api/master/policy' -ScriptBlock {
+        $d = $WebEvent.Data
+        $tier = [string]$d.tier; if (-not $tier) { $tier = 'Tier1' }
+        $policy = @{
+            Section             = [string]$d.section
+            PolicyName          = [string]$d.policyName
+            Impact              = [string]$d.impact
+            WhatItDoes          = [string]$d.whatItDoes
+            WhatUsersExperience = [string]$d.whatUsersExperience
+            PortalPath          = [string]$d.portalPath
+            AutoRemediable      = [string]$d.autoRemediable
+            License             = [string]$d.license
+        }
+        try {
+            $res = Add-MasterPolicy -Policy $policy -PlaybookKey $tier
+            Write-PodeJsonResponse -Value @{ ok=$true; policyName=$res.policyName; section=$res.section }
+        } catch {
+            Set-PodeResponseStatus -Code 400 -NoErrorPage
+            Write-PodeJsonResponse -Value @{ error="$($_.Exception.Message)" }
+        }
+    }
+
     # ---- report: view HTML ----
     Add-PodeRoute -Method Get -Path '/api/report/view' -ScriptBlock {
         $eng = Get-PodeState -Name 'eng'

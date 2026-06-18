@@ -303,3 +303,17 @@ code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
 .toast.err{background:var(--high)}
 .toast-x{background:none;border:0;color:inherit;font-size:18px;line-height:1;cursor:pointer;padding:0;opacity:.8;flex:none}
 .toast-x:hover{opacity:1}
+
+/* ---- manage master form ---- */
+.startfoot{margin-top:22px;padding-top:18px;border-top:1px solid var(--line);text-align:center}
+.mform label{display:block;font-size:12px;color:var(--muted);margin:12px 0 5px;font-weight:600}
+.mform .req{color:var(--high)}
+.mform input,.mform select,.mform textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:var(--ctl);color:var(--ink);font-family:inherit}
+.mform textarea{resize:vertical}
+.mform input:focus,.mform select:focus,.mform textarea:focus{outline:none;border-color:var(--brand2);box-shadow:0 0 0 3px var(--brandlt)}
+.mform #mSectionNew{margin-top:8px}
+.mrow{display:flex;gap:12px}
+.mrow>div{flex:1}
+.fielderr{font-size:12px;color:var(--high);margin-top:6px;font-weight:600}
+.mactions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:20px}
+.mactions .hint{margin-top:0}
