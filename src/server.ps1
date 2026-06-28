@@ -11,6 +11,10 @@ Import-Module Pode -ErrorAction Stop
 
 $env:PLAYBOOK_ROOT = Split-Path $PSScriptRoot -Parent
 $env:PLAYBOOK_PORT = "$Port"
+# Bind address: 127.0.0.1 for the desktop launchers (loopback only). A container
+# sets PLAYBOOK_ADDRESS=0.0.0.0 so the published port is reachable from the host
+# (Docker forwards to the container's eth0, not its loopback).
+if (-not $env:PLAYBOOK_ADDRESS) { $env:PLAYBOOK_ADDRESS = '127.0.0.1' }
 
 # -Browse opens the default browser in-process once the endpoint is bound.
 Start-PodeServer -Browse:$Browse {
@@ -25,7 +29,7 @@ Start-PodeServer -Browse:$Browse {
         if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null }
     }
 
-    Add-PodeEndpoint -Address 127.0.0.1 -Port ([int]$env:PLAYBOOK_PORT) -Protocol Http
+    Add-PodeEndpoint -Address $env:PLAYBOOK_ADDRESS -Port ([int]$env:PLAYBOOK_PORT) -Protocol Http
     Import-PodeModule -Path (Join-Path $src 'PlaybookCore.psm1')
     New-PodeLoggingMethod -Terminal | Enable-PodeErrorLogging
 

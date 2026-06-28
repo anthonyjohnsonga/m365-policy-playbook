@@ -236,12 +236,23 @@ function Limit-ReportFiles {
 
 # --- PDF export (via Edge / Chrome headless) ---------------------------------
 function Find-HeadlessBrowser {
+    # An explicit override wins (used in containers / non-standard installs).
+    if ($env:CHROME_BIN -and (Test-Path $env:CHROME_BIN)) { return $env:CHROME_BIN }
     if ($IsMacOS) {
         # macOS keeps the executable inside the .app bundle.
         $cands = @(
             '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'
             '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
             '/Applications/Chromium.app/Contents/MacOS/Chromium'
+        )
+    }
+    elseif ($IsLinux) {
+        # Linux / container: Chromium or Chrome installed on the system path.
+        $cands = @(
+            '/usr/bin/chromium'
+            '/usr/bin/chromium-browser'
+            '/usr/bin/google-chrome'
+            '/usr/bin/google-chrome-stable'
         )
     }
     else {
@@ -279,7 +290,12 @@ function Export-ReportPdf {
     # gets passed through literally — and breaks the path — on macOS. --headless
     # means no window appears, so -WindowStyle Hidden (Windows-only, unsupported
     # on macOS) is no longer needed.
-    & $browser '--headless' '--disable-gpu' '--no-pdf-header-footer' "--print-to-pdf=$OutPath" $fileUri 2>$null | Out-Null
+    $chromeArgs = @('--headless','--disable-gpu','--no-pdf-header-footer')
+    # In a container Chromium runs as root with a tiny /dev/shm; these flags are
+    # required there and only apply on Linux.
+    if ($IsLinux) { $chromeArgs += '--no-sandbox','--disable-dev-shm-usage' }
+    $chromeArgs += "--print-to-pdf=$OutPath", $fileUri
+    & $browser @chromeArgs 2>$null | Out-Null
     $exit = $LASTEXITCODE
 
     Remove-Item $tmp -Force -ErrorAction SilentlyContinue
