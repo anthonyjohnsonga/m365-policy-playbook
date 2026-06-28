@@ -135,6 +135,22 @@ code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
 .kv b{color:var(--ink);font-weight:600}
 .portal{font-family:Consolas,monospace;font-size:12px;background:var(--portal);border:1px solid var(--line);padding:4px 8px;border-radius:5px}
 
+/* ---- per-policy "How to configure" reference (collapsible) ---- */
+.guide{margin-top:11px;border:1px solid var(--line);border-radius:8px;background:var(--portal);overflow:hidden}
+.guide>summary{cursor:pointer;padding:8px 12px;font-size:12.5px;font-weight:600;color:var(--accent);list-style:none;user-select:none;display:flex;align-items:center;gap:8px}
+.guide>summary::-webkit-details-marker{display:none}
+.guide>summary::before{content:"\25B8";font-size:11px;transition:transform .15s}
+.guide[open]>summary::before{transform:rotate(90deg)}
+.guide-hint{font-weight:400;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-size:10.5px}
+.guide-body{padding:2px 14px 12px;border-top:1px solid var(--line)}
+.guide-h{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;margin:12px 0 6px}
+.guide-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.guide-tbl td{border-bottom:1px solid var(--rowline);padding:5px 8px;vertical-align:top;line-height:1.45}
+.guide-tbl td:first-child{width:32%;color:var(--muted);font-weight:600}
+.guide-steps{margin:0;padding-left:20px;font-size:12.5px;line-height:1.55}
+.guide-steps li{margin-bottom:4px}
+.guide-docs{margin-top:10px;font-size:12px}
+
 .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:14px;padding-top:13px;border-top:1px dashed var(--line)}
 .controls label{font-size:11px;color:var(--muted);font-weight:600;margin-right:4px}
 .controls select,.controls input[type=text],.controls input[type=date]{padding:7px 9px;border:1px solid var(--line);border-radius:7px;font-size:13px;background:var(--ctl);color:var(--ink)}

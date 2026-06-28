@@ -167,7 +167,15 @@ Start-PodeServer -Browse:$Browse {
     Add-PodeRoute -Method Get -Path '/api/policies' -ScriptBlock {
         $eng = Get-PodeState -Name 'eng'
         if (-not $eng) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
-        Write-PodeJsonResponse -Value @{ policies = @($eng.Policies) }
+        # Merge read-only config guidance (by Policy Name) into a shallow copy of
+        # each policy so the engagement state stays lean and is never mutated.
+        $guide = Get-PolicyGuidanceMap
+        $out = foreach ($p in $eng.Policies) {
+            $c = $p.PSObject.Copy()
+            $c | Add-Member -NotePropertyName Guidance -NotePropertyValue $guide[[string]$p.PolicyName] -Force
+            $c
+        }
+        Write-PodeJsonResponse -Value @{ policies = @($out) } -Depth 12
     }
 
     # ---- update one policy field ----

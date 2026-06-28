@@ -53,8 +53,31 @@ function Get-PlaybookConfig {
     }
 }
 
-function Get-MastersPath { Join-Path $PSScriptRoot '..' 'data' 'masters' }
-function Get-ClientsPath { Join-Path $PSScriptRoot '..' 'data' 'clients' }
+function Get-MastersPath  { Join-Path $PSScriptRoot '..' 'data' 'masters' }
+function Get-ClientsPath  { Join-Path $PSScriptRoot '..' 'data' 'clients' }
+function Get-GuidancePath { Join-Path $PSScriptRoot '..' 'data' 'guidance' }
+
+# --- Policy configuration guidance (read-only, tech reference) ----------------
+#  Optional per-policy "how to configure / what to set" content lives in
+#  data\guidance\*.json, keyed by exact Policy Name. It's merged into the policy
+#  payload at serve time (see /api/policies) and never written to a client file.
+#  Loaded fresh each call (the files are tiny) so edits show on a page reload
+#  without restarting the server. A missing/!malformed file just yields no
+#  guidance rather than failing the request.
+function Get-PolicyGuidanceMap {
+    $map = @{}
+    $dir = Get-GuidancePath
+    if (-not (Test-Path $dir)) { return $map }
+    foreach ($f in (Get-ChildItem $dir -Filter *.json -File -ErrorAction SilentlyContinue)) {
+        try {
+            $json = Get-Content -LiteralPath $f.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($json.policies) {
+                foreach ($prop in $json.policies.PSObject.Properties) { $map[$prop.Name] = $prop.Value }
+            }
+        } catch { }   # a bad guidance file must never break policy loading
+    }
+    return $map
+}
 
 # Sanitize a client name into the token used for BOTH its subfolder and its
 # file-name prefix. The save path and the companion lookup must derive this the

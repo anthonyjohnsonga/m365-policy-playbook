@@ -1,0 +1,262 @@
+{
+  "meta": {
+    "tier": "Tier1",
+    "section": "Identity & Access — Conditional Access",
+    "source": "Microsoft Learn (learn.microsoft.com/entra) — drafted for review, verified June 2026",
+    "generalNotes": [
+      "All policies are created at Entra ID > Protection > Conditional Access > Policies > New policy.",
+      "Build each policy in Report-only first. Review Sign-in logs / policy impact, then switch Enable policy from Report-only to On.",
+      "Always exclude break-glass / emergency-access accounts (and any directory-sync or service accounts) under Users > Exclude so a misconfiguration can't lock everyone out."
+    ]
+  },
+  "policies": {
+    "Core - Allow - MFA for Internal Users": {
+      "requiredSettings": [
+        { "label": "Users — Include", "value": "All users" },
+        { "label": "Users — Exclude", "value": "Break-glass / emergency-access accounts; directory-sync service accounts" },
+        { "label": "Target resources", "value": "All resources (formerly 'All cloud apps')" },
+        { "label": "Conditions", "value": "None (applies to all sign-ins)" },
+        { "label": "Grant", "value": "Grant access → Require authentication strength: Multifactor authentication (or the Inforcer MFA authentication strength)" },
+        { "label": "Enable policy", "value": "Report-only → On after validation" }
+      ],
+      "steps": [
+        "New policy → give it a clear name (e.g. 'CA01 - Require MFA - Internal Users').",
+        "Assignments → Users → Include = All users; Exclude = break-glass accounts.",
+        "Target resources → Resources → Include = All resources (formerly 'All cloud apps').",
+        "Access controls → Grant → Grant access → select Require authentication strength = Multifactor authentication; Select.",
+        "Set Enable policy = Report-only, Create. After reviewing impact, switch to On."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/conditional-access/policy-all-users-mfa-strength"
+    },
+    "Core - Allow - MFA for Admins": {
+      "requiredSettings": [
+        { "label": "Users — Include", "value": "Directory roles → the privileged admin roles (Global Administrator, Privileged Role Administrator, Security Administrator, Exchange/SharePoint Administrator, Conditional Access Administrator, etc.)" },
+        { "label": "Users — Exclude", "value": "Break-glass / emergency-access accounts" },
+        { "label": "Target resources", "value": "All resources (formerly 'All cloud apps')" },
+        { "label": "Grant", "value": "Grant access → Require authentication strength: the Inforcer Authentication Strength (phishing-resistant MFA recommended for admins)" },
+        { "label": "Enable policy", "value": "Report-only → On after validation" }
+      ],
+      "steps": [
+        "New policy → name it (e.g. 'CA02 - Require strong MFA - Admins').",
+        "Assignments → Users → Include = Directory roles; select the privileged admin roles; Exclude = break-glass accounts.",
+        "Target resources → Include = All resources.",
+        "Access controls → Grant → Grant access → Require authentication strength → select the Inforcer Authentication Strength policy; Select.",
+        "Set Enable policy = Report-only, Create. Confirm admins can still sign in, then switch to On."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/conditional-access/policy-admin-phish-resistant-mfa"
+    },
+    "Core - Allow - MFA for Guests (excl. B2B Guests)": {
+      "requiredSettings": [
+        { "label": "Users — Include", "value": "Guest or external users → Local guest users, Service provider users, and Other external users (do NOT tick B2B collaboration guest users — that is handled by the separate B2B policy)" },
+        { "label": "Users — Exclude", "value": "Break-glass / emergency-access accounts" },
+        { "label": "Target resources", "value": "All resources (formerly 'All cloud apps')" },
+        { "label": "Grant", "value": "Grant access → Require multifactor authentication" },
+        { "label": "Enable policy", "value": "Report-only → On after validation" }
+      ],
+      "steps": [
+        "New policy → name it (e.g. 'CA03 - Require MFA - Guests (non-B2B)').",
+        "Assignments → Users → Include → Select 'Guest or external users', then tick Local guest, Service provider, and Other external users; leave B2B collaboration guest users unticked.",
+        "Exclude = break-glass accounts.",
+        "Target resources → Include = All resources.",
+        "Access controls → Grant → Grant access → Require multifactor authentication; Select.",
+        "Set Enable policy = Report-only, Create; switch to On after validation."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/conditional-access/policy-old-require-mfa-guest"
+    },
+    "Core - Allow - MFA for B2B Guests": {
+      "requiredSettings": [
+        { "label": "Users — Include", "value": "Guest or external users → B2B collaboration guest users (and B2B collaboration member users if used)" },
+        { "label": "Users — Exclude", "value": "Break-glass / emergency-access accounts" },
+        { "label": "Target resources", "value": "All resources (formerly 'All cloud apps')" },
+        { "label": "Grant", "value": "Grant access → Require multifactor authentication" },
+        { "label": "Enable policy", "value": "Report-only → On after validation" }
+      ],
+      "steps": [
+        "New policy → name it (e.g. 'CA04 - Require MFA - B2B Guests').",
+        "Assignments → Users → Include → 'Guest or external users' → tick B2B collaboration guest users.",
+        "Exclude = break-glass accounts.",
+        "Target resources → Include = All resources.",
+        "Access controls → Grant → Grant access → Require multifactor authentication; Select.",
+        "Set Enable policy = Report-only, Create; switch to On after validation.",
+        "Note: home-tenant MFA satisfies this when cross-tenant access settings are configured to trust the guest's MFA."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/conditional-access/policy-old-require-mfa-guest"
+    },
+    "Core - Require - MFA for Admin Portals": {
+      "requiredSettings": [
+        { "label": "Users — Include", "value": "All users (or the privileged admin roles)" },
+        { "label": "Users — Exclude", "value": "Break-glass / emergency-access accounts" },
+        { "label": "Target resources", "value": "Resources → Select 'Microsoft Admin Portals'" },
+        { "label": "Grant", "value": "Grant access → Require multifactor authentication (or Require authentication strength: Multifactor authentication)" },
+        { "label": "Enable policy", "value": "Report-only → On after validation" }
+      ],
+      "steps": [
+        "New policy → name it (e.g. 'CA05 - Require MFA - Admin Portals').",
+        "Assignments → Users → Include = All users; Exclude = break-glass accounts.",
+        "Target resources → Include → Select resources → choose 'Microsoft Admin Portals'.",
+        "Access controls → Grant → Grant access → Require multifactor authentication; Select.",
+        "Set Enable policy = Report-only, Create; switch to On after validation."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/conditional-access/policy-old-require-mfa-admin-portals"
+    },
+    "Core - Block - Legacy Authentication": {
+      "requiredSettings": [
+        { "label": "Users — Include", "value": "All users" },
+        { "label": "Users — Exclude", "value": "Break-glass accounts; any account that must keep legacy auth (audit regularly)" },
+        { "label": "Target resources", "value": "All resources (formerly 'All cloud apps')" },
+        { "label": "Conditions — Client apps", "value": "Configure = Yes; tick ONLY 'Exchange ActiveSync clients' and 'Other clients'" },
+        { "label": "Grant", "value": "Block access" },
+        { "label": "Enable policy", "value": "Report-only → On after validation" }
+      ],
+      "steps": [
+        "New policy → name it (e.g. 'CA06 - Block - Legacy authentication').",
+        "Assignments → Users → Include = All users; Exclude = break-glass accounts (plus any account that genuinely still needs legacy auth).",
+        "Target resources → Include = All resources.",
+        "Conditions → Client apps → Configure = Yes → check only 'Exchange ActiveSync clients' and 'Other clients'; Done.",
+        "Access controls → Grant → Block access; Select.",
+        "Set Enable policy = Report-only, Create. Use the Sign-ins-using-legacy-authentication workbook to confirm impact, then switch to On."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/conditional-access/policy-block-legacy-authentication"
+    },
+    "Core - Block - Device Code Flow": {
+      "requiredSettings": [
+        { "label": "Users — Include", "value": "All users" },
+        { "label": "Users — Exclude", "value": "Break-glass accounts; documented device-code exceptions (e.g. Teams Room resource accounts)" },
+        { "label": "Target resources", "value": "All resources (formerly 'All cloud apps')" },
+        { "label": "Conditions — Authentication flows", "value": "Configure = Yes; select 'Device code flow'" },
+        { "label": "Grant", "value": "Block access" },
+        { "label": "Enable policy", "value": "Report-only → On after validation" }
+      ],
+      "steps": [
+        "New policy → name it (e.g. 'CA07 - Block - Device code flow').",
+        "Assignments → Users → Include = All users; Exclude = break-glass accounts and any approved device-code exception group.",
+        "Target resources → Include = All resources.",
+        "Conditions → Authentication Flows → Configure = Yes → select 'Device code flow'; Done.",
+        "Access controls → Grant → Block access; Select.",
+        "Set Enable policy = Report-only, Create. If using Teams devices/Azure CLI, scope exceptions and exclude the Device Registration Service resource, then switch to On."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/conditional-access/policy-block-authentication-flows"
+    },
+    "Core - Block - Authentication Transfer Flow": {
+      "requiredSettings": [
+        { "label": "Users — Include", "value": "All users (or the groups you want to block from transferring auth PC→mobile)" },
+        { "label": "Users — Exclude", "value": "Break-glass / emergency-access accounts" },
+        { "label": "Target resources", "value": "All resources (formerly 'All cloud apps')" },
+        { "label": "Conditions — Authentication flows", "value": "Configure = Yes; select 'Authentication transfer'" },
+        { "label": "Grant", "value": "Block access" },
+        { "label": "Enable policy", "value": "Report-only → On after validation" }
+      ],
+      "steps": [
+        "New policy → name it (e.g. 'CA08 - Block - Authentication transfer').",
+        "Assignments → Users → Include = All users; Exclude = break-glass accounts.",
+        "Target resources → Include = All resources.",
+        "Conditions → Authentication Flows → Configure = Yes → select 'Authentication transfer'; Done.",
+        "Access controls → Grant → Block access; Select.",
+        "Set Enable policy = Report-only, Create; switch to On after validation."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/conditional-access/policy-block-authentication-flows#authentication-transfer-policies"
+    },
+    "Core - Require - Token Protection (Windows)": {
+      "requiredSettings": [
+        { "label": "Prerequisites", "value": "Entra ID P1; Entra joined / hybrid joined / Entra registered Windows 10+ devices. Confirm app compatibility and that no VDI is in scope before enforcing." },
+        { "label": "Users — Include", "value": "All users (pilot group first)" },
+        { "label": "Users — Exclude", "value": "Break-glass / emergency-access accounts" },
+        { "label": "Target resources", "value": "Exchange Online, SharePoint Online, Microsoft Teams (the resources Token Protection supports)" },
+        { "label": "Conditions — Device platforms", "value": "Configure = Yes; Include = Windows" },
+        { "label": "Conditions — Client apps", "value": "Configure = Yes; tick ONLY 'Mobile apps and desktop clients' (leave Browser unchecked — browser apps aren't supported)" },
+        { "label": "Session", "value": "Require token protection for sign-in sessions" },
+        { "label": "Enable policy", "value": "Report-only → On after validation" }
+      ],
+      "steps": [
+        "New policy → name it (e.g. 'CA09 - Require token protection - Windows').",
+        "Assignments → Users → Include = pilot group / All users; Exclude = break-glass accounts.",
+        "Target resources → Include = select Exchange Online, SharePoint Online, and Microsoft Teams.",
+        "Conditions → Device platforms → Configure = Yes → Include = Windows.",
+        "Conditions → Client apps → Configure = Yes → under Modern authentication clients tick only 'Mobile apps and desktop clients'; Done.",
+        "Access controls → Session → tick 'Require token protection for sign-in sessions'; Select.",
+        "Set Enable policy = Report-only, Create. Use Sign-in logs (Token Protection - Sign-In Session = Bound) to confirm, then switch to On.",
+        "Pair with the 'Block unsupported platforms' policy so the control can't be bypassed from a spoofed platform."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/conditional-access/concept-token-protection"
+    },
+    "Core - Require - Intune Enrollment Sign-In Frequency": {
+      "requiredSettings": [
+        { "label": "Users — Include", "value": "All users (the population you enroll into Intune)" },
+        { "label": "Users — Exclude", "value": "Break-glass / emergency-access accounts" },
+        { "label": "Target resources", "value": "Resources → select 'Microsoft Intune Enrollment'" },
+        { "label": "Session — Sign-in frequency", "value": "Periodic reauthentication, value per the Inforcer baseline (commonly a short window so enrollment uses a fresh, MFA-backed token)" },
+        { "label": "Grant", "value": "Grant access → Require multifactor authentication (so reauth is MFA-backed)" },
+        { "label": "Enable policy", "value": "Report-only → On after validation" }
+      ],
+      "steps": [
+        "New policy → name it (e.g. 'CA10 - Sign-in frequency - Intune Enrollment').",
+        "Assignments → Users → Include = All users; Exclude = break-glass accounts.",
+        "Target resources → Include → Select resources → 'Microsoft Intune Enrollment'.",
+        "Access controls → Grant → Grant access → Require multifactor authentication; Select.",
+        "Access controls → Session → tick 'Sign-in frequency' → Periodic reauthentication → set the value to the Inforcer baseline; Select.",
+        "Set Enable policy = Report-only, Create; switch to On after validation."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/conditional-access/concept-session-lifetime"
+    },
+    "MAM - Require - App Protection Policy for (Android/iOS)": {
+      "requiredSettings": [
+        { "label": "Prerequisites", "value": "Matching Intune App Protection Policy (APP/MAM) targeting the same users; devices registered in Entra ID (Authenticator on iOS, Company Portal on Android act as broker)." },
+        { "label": "Users — Include", "value": "All users" },
+        { "label": "Users — Exclude", "value": "Break-glass / emergency-access accounts" },
+        { "label": "Target resources", "value": "All resources (formerly 'All cloud apps')" },
+        { "label": "Conditions — Device platforms", "value": "Configure = Yes; Include = Android and iOS" },
+        { "label": "Grant", "value": "Grant access → Require app protection policy (and Require approved client app); 'Require one of the selected controls'" },
+        { "label": "Enable policy", "value": "Report-only → On after validation" }
+      ],
+      "steps": [
+        "New policy → name it (e.g. 'CA11 - Require app protection policy - Mobile').",
+        "Assignments → Users → Include = All users; Exclude = break-glass accounts.",
+        "Target resources → Include = All resources.",
+        "Conditions → Device platforms → Configure = Yes → Include → select Android and iOS; Done.",
+        "Access controls → Grant → Grant access → tick 'Require app protection policy' and 'Require approved client app' → 'Require one of the selected controls'; Select.",
+        "Set Enable policy = Report-only, Create. Confirm a matching Intune App Protection Policy is assigned, then switch to On."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/conditional-access/policy-all-users-approved-app-or-app-protection"
+    },
+    "Core - Allow - Browser Sessions for Unmanaged Devices": {
+      "requiredSettings": [
+        { "label": "Users — Include", "value": "All users" },
+        { "label": "Users — Exclude", "value": "Break-glass / emergency-access accounts" },
+        { "label": "Target resources", "value": "Office 365 (or specifically SharePoint Online + Exchange Online)" },
+        { "label": "Conditions — Client apps", "value": "Configure = Yes; tick 'Browser'" },
+        { "label": "Session", "value": "Use app enforced restrictions (gives browser-only, no download/print/sync on unmanaged devices)" },
+        { "label": "Companion setting", "value": "SharePoint admin center → Policies → Access control → Unmanaged devices = 'Allow limited, web-only access'" },
+        { "label": "Enable policy", "value": "Report-only → On after validation" }
+      ],
+      "steps": [
+        "New policy → name it (e.g. 'CA12 - App-enforced restrictions - Unmanaged browser').",
+        "Assignments → Users → Include = All users; Exclude = break-glass accounts.",
+        "Target resources → Include = Office 365.",
+        "Conditions → Client apps → Configure = Yes → tick 'Browser'; Done.",
+        "Access controls → Session → tick 'Use app enforced restrictions'; Select.",
+        "In SharePoint admin center set Unmanaged devices to 'Allow limited, web-only access' so SharePoint/OneDrive enforce the browser-only experience.",
+        "Set Enable policy = Report-only, Create; switch to On after validation."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/conditional-access/policy-all-users-app-enforced-restrictions"
+    },
+    "Core - Block - Unsupported Platforms": {
+      "requiredSettings": [
+        { "label": "Users — Include", "value": "All users" },
+        { "label": "Users — Exclude", "value": "Break-glass / emergency-access accounts" },
+        { "label": "Target resources", "value": "All resources (formerly 'All cloud apps')" },
+        { "label": "Conditions — Device platforms", "value": "Configure = Yes; Include = Any device; Exclude = Windows, macOS, iOS, Android (the platforms you support)" },
+        { "label": "Grant", "value": "Block access" },
+        { "label": "Enable policy", "value": "Report-only → On after validation" }
+      ],
+      "steps": [
+        "New policy → name it (e.g. 'CA13 - Block - Unsupported platforms').",
+        "Assignments → Users → Include = All users; Exclude = break-glass accounts.",
+        "Target resources → Include = All resources.",
+        "Conditions → Device platforms → Configure = Yes → Include = Any device → Exclude = Windows, macOS, iOS, Android (deselect any platform you don't support); Done.",
+        "Access controls → Grant → Block access; Select.",
+        "Set Enable policy = Report-only, Create. Pair with a compliance/app-protection policy (platform is user-agent based and can be spoofed), then switch to On."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/conditional-access/policy-all-users-device-unknown-unsupported"
+    }
+  }
+}

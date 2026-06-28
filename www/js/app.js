@@ -460,6 +460,26 @@ function visiblePolicies(){
 
 function statusClass(s){ return 's-' + (s||'').toLowerCase().replace(/[^a-z]/g,''); }
 
+// Optional per-policy "how to configure" reference (from data/guidance/*.json),
+// shown as a collapsed details block. Only policies with guidance render it.
+function guidanceHtml(g){
+  if(!g) return '';
+  const settings = (g.requiredSettings||[]).map(s =>
+    `<tr><td>${enc(s.label)}</td><td>${enc(s.value)}</td></tr>`).join('');
+  const steps = (g.steps||[]).map(s => `<li>${enc(s)}</li>`).join('');
+  const docs = g.docs ? `<div class="guide-docs"><a href="${enc(g.docs)}" target="_blank" rel="noopener">Microsoft Learn reference ↗</a></div>` : '';
+  if(!settings && !steps && !docs) return '';
+  return `<details class="guide">
+    <summary>How to configure <span class="guide-hint">settings &amp; steps</span></summary>
+    <div class="guide-body">
+      ${settings?`<div class="guide-h">Settings to meet this policy</div>
+        <table class="guide-tbl"><tbody>${settings}</tbody></table>`:''}
+      ${steps?`<div class="guide-h">Configuration steps</div><ol class="guide-steps">${steps}</ol>`:''}
+      ${docs}
+    </div>
+  </details>`;
+}
+
 function renderCards(){
   const head = $('#contentHead');
   const list = visiblePolicies();
@@ -492,6 +512,7 @@ function renderCards(){
         ${p.PortalPath?`<span class="portal">${enc(p.PortalPath)}</span>`:''}
         ${extra.join('')}
       </div>
+      ${guidanceHtml(p.Guidance)}
       <div class="controls">
         <span><label>Status</label>
           <select class="status-sel ${statusClass(p.Status)}" data-field="Status">${opts}</select></span>
