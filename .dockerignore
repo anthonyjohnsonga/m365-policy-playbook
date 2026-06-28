@@ -1,0 +1,17 @@
+# Keep the build context lean — the image only needs src/, www/,
+# data/masters/, and Start-PlaybookApp.ps1.
+.git
+.github
+.claude
+.gitattributes
+.gitignore
+**/_backups
+data/clients
+reports
+PNG
+*.md
+Launch.cmd
+Launch.command
+Dockerfile
+.dockerignore
+docker-compose.yml

@@ -1,0 +1,30 @@
+# ============================================================================
+#  M365 Policy Playbook — Docker run config
+# ----------------------------------------------------------------------------
+#  Build & run locally:                 docker compose up -d --build
+#  Once published to GHCR (phase 3):    docker compose pull && docker compose up -d
+#  Reach it at  http://localhost:3020   (published on the host loopback only)
+# ============================================================================
+services:
+  playbook:
+    image: ghcr.io/anthonyjohnsonga/m365-policy-playbook:latest
+    build: .
+    container_name: m365-policy-playbook
+    restart: unless-stopped
+    ports:
+      # host:container — 127.0.0.1 keeps it off the LAN. Change the left side if
+      # host port 3020 is taken (e.g. "127.0.0.1:3025:3020"); drop the 127.0.0.1
+      # to expose it on the network.
+      - "127.0.0.1:3020:3020"
+    environment:
+      # Set to your timezone so overdue / due-soon dates match your locale.
+      TZ: America/New_York
+    volumes:
+      - clients:/app/data/clients   # saved client working files
+      - reports:/app/reports        # generated Excel / PDF reports
+      - masters:/app/data/masters   # editable master playbooks (seeded from image)
+
+volumes:
+  clients:
+  reports:
+  masters:
