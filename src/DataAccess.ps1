@@ -62,7 +62,7 @@ function Get-GuidancePath { Join-Path $PSScriptRoot '..' 'data' 'guidance' }
 #  data\guidance\*.json, keyed by exact Policy Name. It's merged into the policy
 #  payload at serve time (see /api/policies) and never written to a client file.
 #  Loaded fresh each call (the files are tiny) so edits show on a page reload
-#  without restarting the server. A missing/!malformed file just yields no
+#  without restarting the server. A missing/malformed file just yields no
 #  guidance rather than failing the request.
 function Get-PolicyGuidanceMap {
     $map = @{}
