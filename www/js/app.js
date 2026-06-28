@@ -445,7 +445,9 @@ function renderNav(){
 
 function visiblePolicies(){
   return state.policies.filter(p => {
-    if(p.Section !== state.section) return false;
+    // A search term searches across every section; without one, show only the
+    // section selected in the nav.
+    if(!state.search && p.Section !== state.section) return false;
     if(state.impact !== 'all' && p.ImpactClass !== state.impact) return false;
     if(state.attention && !dueState(p)) return false;
     if(state.search){
@@ -461,8 +463,8 @@ function statusClass(s){ return 's-' + (s||'').toLowerCase().replace(/[^a-z]/g,'
 function renderCards(){
   const head = $('#contentHead');
   const list = visiblePolicies();
-  head.innerHTML = `<h2>${enc(state.section||'')}</h2>
-     <div class="meta">${list.length} ${state.impact==='all'?'':state.impact+' impact '}policies${state.search?` matching "${enc(state.search)}"`:''}</div>`;
+  head.innerHTML = `<h2>${state.search ? 'Search results' : enc(state.section||'')}</h2>
+     <div class="meta">${list.length} ${state.impact==='all'?'':state.impact+' impact '}policies${state.search?` matching "${enc(state.search)}" across all sections`:''}</div>`;
   const cards = $('#cards');
   if(!list.length){ cards.innerHTML = '<div class="empty">No policies match the current filter.</div>'; return; }
 
@@ -546,7 +548,7 @@ function setupBulk(){
 function bulkTargets(){
   const scope = $('#bulkScope').value;
   return state.policies.filter(p => {
-    if(scope==='visible' && p.Section!==state.section) return false;
+    if(scope==='visible' && !state.search && p.Section!==state.section) return false;
     if(state.impact!=='all' && p.ImpactClass!==state.impact) return false;
     if(state.attention && !dueState(p)) return false;
     if(state.search){
