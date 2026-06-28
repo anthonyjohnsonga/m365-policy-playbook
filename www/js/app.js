@@ -464,9 +464,12 @@ function statusClass(s){ return 's-' + (s||'').toLowerCase().replace(/[^a-z]/g,'
 // shown as a collapsed details block. Only policies with guidance render it.
 function guidanceHtml(g){
   if(!g) return '';
-  const settings = (g.requiredSettings||[]).map(s =>
+  // A single-item list can round-trip through PowerShell's JSON as a scalar, so
+  // coerce to an array before mapping.
+  const asArray = v => v == null ? [] : (Array.isArray(v) ? v : [v]);
+  const settings = asArray(g.requiredSettings).map(s =>
     `<tr><td>${enc(s.label)}</td><td>${enc(s.value)}</td></tr>`).join('');
-  const steps = (g.steps||[]).map(s => `<li>${enc(s)}</li>`).join('');
+  const steps = asArray(g.steps).map(s => `<li>${enc(s)}</li>`).join('');
   // Only render the link for a real http(s) URL so a javascript:/data: href can't slip in.
   const docsUrl = (g.docs && /^https?:\/\//i.test(g.docs)) ? g.docs : '';
   const docs = docsUrl ? `<div class="guide-docs"><a href="${enc(docsUrl)}" target="_blank" rel="noopener">Microsoft Learn reference ↗</a></div>` : '';
