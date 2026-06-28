@@ -211,13 +211,16 @@ code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
 
 /* ---- view toggle + bulk bar ---- */
 #viewbar{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap}
-.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--ctl)}
-.seg button{border:0;background:var(--ctl);padding:8px 16px;font-size:13px;font-weight:600;color:var(--muted)}
-.seg button.active{background:var(--brand);color:#fff}
-.bulkbar{display:flex;align-items:center;gap:8px;margin-left:auto;background:var(--ctl);border:1px solid var(--line);border-radius:8px;padding:6px 10px;flex-wrap:wrap}
+.seg{display:inline-flex;gap:2px;border:1px solid var(--line);border-radius:10px;background:var(--track);padding:3px}
+.seg button{border:0;background:transparent;padding:7px 15px;font-size:13px;font-weight:600;color:var(--muted);border-radius:8px;transition:background .15s ease,color .15s ease,box-shadow .15s ease}
+.seg button:hover{color:var(--ink);background:var(--ctl-hover)}
+.seg button.active{background:var(--brand);color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-1px}
+.bulkbar{display:flex;align-items:center;gap:8px;margin-left:auto;background:var(--ctl);border:1px solid var(--line);border-radius:10px;padding:6px 10px;flex-wrap:wrap}
 .bulklabel{font-size:12px;color:var(--muted)}
 .bulklabel b{color:var(--ink)}
-.bulkbar select{padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px;background:var(--ctl);color:var(--ink)}
+.bulkbar select{padding:6px 9px;border:1px solid var(--line);border-radius:8px;font-size:12px;background:var(--ctl);color:var(--ink);transition:border-color .15s ease,box-shadow .15s ease}
+.bulkbar select:focus{outline:none;border-color:var(--brand2);box-shadow:0 0 0 3px var(--brandlt)}
 .bulkbar .btn{padding:6px 12px}
 .bulkbar.hidden{display:none}
 
