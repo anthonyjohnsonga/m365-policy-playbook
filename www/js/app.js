@@ -467,7 +467,9 @@ function guidanceHtml(g){
   const settings = (g.requiredSettings||[]).map(s =>
     `<tr><td>${enc(s.label)}</td><td>${enc(s.value)}</td></tr>`).join('');
   const steps = (g.steps||[]).map(s => `<li>${enc(s)}</li>`).join('');
-  const docs = g.docs ? `<div class="guide-docs"><a href="${enc(g.docs)}" target="_blank" rel="noopener">Microsoft Learn reference ↗</a></div>` : '';
+  // Only render the link for a real http(s) URL so a javascript:/data: href can't slip in.
+  const docsUrl = (g.docs && /^https?:\/\//i.test(g.docs)) ? g.docs : '';
+  const docs = docsUrl ? `<div class="guide-docs"><a href="${enc(docsUrl)}" target="_blank" rel="noopener">Microsoft Learn reference ↗</a></div>` : '';
   if(!settings && !steps && !docs) return '';
   return `<details class="guide">
     <summary>How to configure <span class="guide-hint">settings &amp; steps</span></summary>
