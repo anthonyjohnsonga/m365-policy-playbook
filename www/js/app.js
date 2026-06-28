@@ -6,7 +6,7 @@ const enc = s => (s ?? '').toString()
 
 const state = {
   active:false, policies:[], statusOptions:[], doneStatuses:[], verb:'done',
-  section:null, impact:'all', search:'', view:'checklist', attention:false,
+  section:null, impact:'all', search:'', searchRaw:'', view:'checklist', attention:false,
   sourceFile:null, dirty:false, saving:false, autosaveFailed:false, playbook:null
 };
 
@@ -378,7 +378,7 @@ function wireTop(){
     menu.querySelectorAll('.dropdown a').forEach(a => a.addEventListener('click', () => menu.classList.remove('open')));
     document.addEventListener('click', e => { if(!menu.contains(e.target)) menu.classList.remove('open'); });
   }
-  $('#search').oninput = e => { state.search = e.target.value.toLowerCase(); renderCards(); };
+  $('#search').oninput = e => { state.searchRaw = e.target.value; state.search = e.target.value.toLowerCase(); renderCards(); };
   $$('#impactFilter .chip').forEach(c => c.onclick = () => {
     $$('#impactFilter .chip').forEach(x=>x.classList.remove('active'));
     c.classList.add('active'); state.impact = c.dataset.impact; renderCards();
@@ -489,7 +489,7 @@ function renderCards(){
   const head = $('#contentHead');
   const list = visiblePolicies();
   head.innerHTML = `<h2>${state.search ? 'Search results' : enc(state.section||'')}</h2>
-     <div class="meta">${list.length} ${state.impact==='all'?'':state.impact+' impact '}policies${state.search?` matching "${enc(state.search)}" across all sections`:''}</div>`;
+     <div class="meta">${list.length} ${state.impact==='all'?'':state.impact+' impact '}policies${state.search?` matching "${enc(state.searchRaw)}" across all sections`:''}</div>`;
   const cards = $('#cards');
   if(!list.length){ cards.innerHTML = '<div class="empty">No policies match the current filter.</div>'; return; }
 
@@ -968,7 +968,7 @@ async function renderCompanion(){
 }
 
 function jumpToPolicy(id, section){
-  state.impact='all'; state.search='';
+  state.impact='all'; state.search=''; state.searchRaw='';
   $('#search').value='';
   $$('#impactFilter .chip').forEach(x => x.classList.toggle('active', x.dataset.impact==='all'));
   if(section) state.section = section;
