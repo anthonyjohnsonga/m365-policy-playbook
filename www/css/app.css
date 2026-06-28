@@ -122,8 +122,8 @@ code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
 .navitem:hover{background:var(--brandlt)}
 .navitem.active{background:var(--brand);color:#fff}
 .navitem.active .navcount{color:#fff}
-.navname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.navcount{font-size:11px;color:var(--muted);background:rgba(0,0,0,.05);border-radius:10px;padding:1px 8px}
+.navname{flex:1;min-width:0;line-height:1.3;overflow-wrap:break-word}
+.navcount{flex:none;white-space:nowrap;font-size:11px;color:var(--muted);background:rgba(0,0,0,.05);border-radius:10px;padding:1px 8px}
 .navitem.active .navcount{background:rgba(255,255,255,.22)}
 
 /* ---- content ---- */
