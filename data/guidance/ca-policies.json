@@ -2,7 +2,7 @@
   "meta": {
     "tier": "Tier1",
     "section": "Identity & Access — Conditional Access",
-    "source": "Microsoft Learn (learn.microsoft.com/entra) — drafted for review, verified June 2026",
+    "source": "Microsoft Learn (learn.microsoft.com/entra) — drafted from docs; org-specific values (admin auth strength, sign-in frequency) reviewed and confirmed 2026-06-27",
     "generalNotes": [
       "All policies are created at Entra ID > Protection > Conditional Access > Policies > New policy.",
       "Build each policy in Report-only first. Review Sign-in logs / policy impact, then switch Enable policy from Report-only to On.",
@@ -33,7 +33,7 @@
         { "label": "Users — Include", "value": "Directory roles → the privileged admin roles (Global Administrator, Privileged Role Administrator, Security Administrator, Exchange/SharePoint Administrator, Conditional Access Administrator, etc.)" },
         { "label": "Users — Exclude", "value": "Break-glass / emergency-access accounts" },
         { "label": "Target resources", "value": "All resources (formerly 'All cloud apps')" },
-        { "label": "Grant", "value": "Grant access → Require authentication strength: the Inforcer Authentication Strength (phishing-resistant MFA recommended for admins)" },
+        { "label": "Grant", "value": "Grant access → Require authentication strength → select the Inforcer Authentication Strength (custom admin strength)" },
         { "label": "Enable policy", "value": "Report-only → On after validation" }
       ],
       "steps": [
