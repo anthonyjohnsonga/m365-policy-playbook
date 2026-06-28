@@ -136,20 +136,40 @@ code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
 .portal{font-family:Consolas,monospace;font-size:12px;background:var(--portal);border:1px solid var(--line);padding:4px 8px;border-radius:5px}
 
 /* ---- per-policy "How to configure" reference (collapsible) ---- */
-.guide{margin-top:11px;border:1px solid var(--line);border-radius:8px;background:var(--portal);overflow:hidden}
-.guide>summary{cursor:pointer;padding:8px 12px;font-size:12.5px;font-weight:600;color:var(--accent);list-style:none;user-select:none;display:flex;align-items:center;gap:8px}
+.guide{margin-top:12px;border:1px solid var(--line);border-radius:10px;background:var(--portal);overflow:hidden;transition:border-color .18s ease,box-shadow .18s ease}
+.guide[open]{border-color:var(--accent);box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.guide>summary{
+  cursor:pointer;list-style:none;user-select:none;
+  display:flex;align-items:center;gap:10px;
+  padding:11px 14px;
+  font-size:13px;font-weight:600;color:var(--accent);
+  background:var(--accent-bg);
+  transition:background .18s ease;
+}
 .guide>summary::-webkit-details-marker{display:none}
-.guide>summary::before{content:"\25B8";font-size:11px;transition:transform .15s}
-.guide[open]>summary::before{transform:rotate(90deg)}
-.guide-hint{font-weight:400;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-size:10.5px}
-.guide-body{padding:2px 14px 12px;border-top:1px solid var(--line)}
+.guide>summary:hover{background:color-mix(in srgb, var(--accent-bg) 84%, var(--accent))}
+.guide>summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.guide>summary:active{transform:translateY(.5px)}
+/* circular chevron badge on the right, rotates open */
+.guide>summary::after{
+  content:"\25BE";margin-left:auto;
+  width:22px;height:22px;border-radius:50%;
+  display:grid;place-items:center;font-size:11px;
+  color:var(--accent);background:var(--ctl);border:1px solid var(--line);
+  transition:transform .22s ease,background .18s ease;
+}
+.guide[open]>summary::after{transform:rotate(180deg)}
+.guide-hint{font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-size:10px;background:var(--ctl);border:1px solid var(--line);padding:2px 8px;border-radius:999px}
+.guide-body{padding:4px 14px 14px;border-top:1px solid var(--line)}
 .guide-h{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;margin:12px 0 6px}
 .guide-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
 .guide-tbl td{border-bottom:1px solid var(--rowline);padding:5px 8px;vertical-align:top;line-height:1.45}
 .guide-tbl td:first-child{width:32%;color:var(--muted);font-weight:600}
 .guide-steps{margin:0;padding-left:20px;font-size:12.5px;line-height:1.55}
 .guide-steps li{margin-bottom:4px}
-.guide-docs{margin-top:10px;font-size:12px}
+.guide-docs{margin-top:12px}
+.guide-docs a{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--accent);background:var(--accent-bg);border:1px solid transparent;padding:6px 13px;border-radius:999px;text-decoration:none;transition:background .18s ease,border-color .18s ease}
+.guide-docs a:hover{background:color-mix(in srgb, var(--accent-bg) 84%, var(--accent));border-color:var(--accent)}
 
 .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:14px;padding-top:13px;border-top:1px dashed var(--line)}
 .controls label{font-size:11px;color:var(--muted);font-weight:600;margin-right:4px}
