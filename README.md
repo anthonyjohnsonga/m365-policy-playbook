@@ -4,7 +4,7 @@
 ![Server: Pode](https://img.shields.io/badge/server-Pode-1f6feb)
 ![Excel: ImportExcel](https://img.shields.io/badge/Excel-ImportExcel-217346)
 ![Runs locally](https://img.shields.io/badge/runs-127.0.0.1%3A8080-444)
-![Platforms: Windows & macOS](https://img.shields.io/badge/platforms-Windows%20%26%20macOS-0078D4)
+![Platforms: Windows, macOS & Docker](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Docker-0078D4)
 
 A PowerShell web app for walking clients through their Microsoft 365 policy
 baselines during a meeting: explain each policy in plain English, show **who it
@@ -54,6 +54,11 @@ Runs on both **Windows and macOS**.
 The browser opens **automatically once the server is ready** (handled by Pode,
 so it never opens too early to a blank page). Press `Ctrl+C` in the console to
 stop.
+
+**Or with Docker (Linux server / homelab):** a containerized install on
+**port 3020**, pulling the private image from GHCR — see
+**[SETUP.md §14](SETUP.md)** for the steps (`docker login ghcr.io` → `docker
+compose up -d`).
 
 > **Setting this up on a new computer?** See **[SETUP.md](SETUP.md)** for a
 > detailed, step-by-step install & user guide (no PowerShell knowledge required).

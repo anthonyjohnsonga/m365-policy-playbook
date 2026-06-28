@@ -328,5 +328,88 @@ setting is Windows-only.
 
 ---
 
-*Next: a one-click launcher (a `.cmd` you can double-click) so non-technical
-users can skip the PowerShell steps entirely.*
+## 14. Running with Docker (Linux server / homelab)
+
+A third way to run the app — as a Linux container — handy for a home server,
+NAS, or VM. The image bundles PowerShell, the helper modules, and Chromium (so
+**PDF reports work**), and serves the app on **port 3020**.
+
+> **Heads-up:** like the desktop versions, the app has **no login** and holds
+> **one active engagement** at a time. Keep it on `localhost` / VPN (the default
+> below) and treat it as a single-operator tool, not a shared team app.
+
+### Prerequisites
+- A Linux host with **Docker** and **Docker Compose**.
+- The image is **private**, so you need a **GitHub Personal Access Token** with
+  the `read:packages` scope (GitHub → Settings → Developer settings → Personal
+  access tokens → *Tokens (classic)* → Generate, tick **read:packages**).
+
+### 1. Log in to the registry (one time)
+```bash
+docker login ghcr.io -u <your-github-username>
+# paste the Personal Access Token when it asks for a password
+```
+
+### 2a. Run with Docker Compose (recommended)
+Grab `docker-compose.yml` from the repo root, then in that folder:
+```bash
+docker compose pull
+docker compose up -d
+```
+
+### 2b. …or a single `docker run` (no compose file needed)
+```bash
+docker run -d --name m365-policy-playbook \
+  -p 127.0.0.1:3020:3020 \
+  -e TZ=America/New_York \
+  -v m365_clients:/app/data/clients \
+  -v m365_reports:/app/reports \
+  -v m365_masters:/app/data/masters \
+  --restart unless-stopped \
+  ghcr.io/anthonyjohnsonga/m365-policy-playbook:latest
+```
+
+### 3. Open it
+Browse to **http://localhost:3020** *on the server* (it's published to the host
+loopback only). To reach it from another machine use an **SSH tunnel** or a
+**VPN** — don't expose 3020 to the network, since there's no authentication.
+
+### Your data (named volumes)
+Saved work lives in three Docker volumes, so it survives restarts and updates:
+
+| Volume | Holds |
+|---|---|
+| `m365_clients` | per-client working files (`.xlsx`) |
+| `m365_reports` | generated Excel / PDF reports |
+| `m365_masters` | the master playbooks (kept editable so the in-app *Manage master* edits persist) |
+
+To **back up**, archive a volume, e.g.:
+```bash
+docker run --rm -v m365_clients:/data -v "$PWD":/backup alpine \
+  tar czf /backup/clients-backup.tgz -C /data .
+```
+(Prefer files you can see directly on the host? Swap the named volumes for bind
+mounts to host folders in `docker-compose.yml`.)
+
+### Common commands
+```bash
+docker compose logs -f                          # watch the server log
+docker compose pull && docker compose up -d     # update to the latest image
+docker compose down                             # stop (data/volumes are kept)
+```
+
+### Notes & gotchas
+- **Port already in use?** Change the host side of the mapping (e.g.
+  `127.0.0.1:3025:3020`); the app still listens on 3020 inside the container.
+- **Timezone:** set `TZ` (above) to your zone so the overdue / due-soon dates
+  match your locale instead of UTC.
+- **Master updates:** because `m365_masters` is persisted, a newer image's
+  updated baseline masters won't overwrite an existing masters volume — edit
+  masters via the app, or reset just that volume to pick up image updates.
+- **Build it yourself** instead of pulling: from a clone of the repo run
+  `docker compose up -d --build` (the compose file includes a `build:` line).
+
+---
+
+*The Windows `Launch.cmd`, the macOS `Launch.command`, and this Docker image are
+three independent ways to run the same app — pick whichever fits the machine.*
