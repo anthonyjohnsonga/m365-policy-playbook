@@ -1,0 +1,41 @@
+{
+  "meta": {
+    "tier": "Tier1",
+    "section": "Microsoft Teams",
+    "source": "Microsoft Learn (learn.microsoft.com/microsoftteams) — portal paths, setting labels, and defaults grounded via the Microsoft Learn MCP on 2026-07-03.",
+    "generalNotes": [
+      "This is one bundled meeting policy applied to the Global (Org-wide default) policy in Teams Admin Center > Meetings > Meeting policies — edit that policy rather than creating a new one, unless you're scoping it to a subset of users.",
+      "Changes to meeting policies can take up to 24 hours to take effect.",
+      "Several of these settings require Teams Premium (watermarks, copy/forward restriction, enforced participant-rename lockdown) and Copilot requires a Copilot license — they're flagged inline. Without those licenses, configure what you can and note the rest as N/A for the tenant.",
+      "'Anonymous users can join a meeting' also depends on the org-wide toggle at Meetings > Meeting settings > Participants — the per-policy setting only takes effect while the org-wide one is On."
+    ]
+  },
+  "policies": {
+    "Global (Teams Meeting Policy)": {
+      "requiredSettings": [
+        { "label": "Meeting join & lobby — Who can bypass the lobby", "value": "People who were invited (everyone else waits in the lobby until admitted)" },
+        { "label": "Meeting join & lobby — Anonymous users can join a meeting", "value": "On (requires the org-wide toggle at Meetings > Meeting settings to also be On)" },
+        { "label": "Meeting join & lobby — Anonymous users and dial-in callers can start a meeting", "value": "Off (anonymous/dial-in wait in the lobby until a verified participant starts the meeting)" },
+        { "label": "Recording & transcription — Meeting recording", "value": "On — recordings save to OneDrive/SharePoint (Teams has no local-disk recording; this is the 'cloud only' behavior)" },
+        { "label": "Recording & transcription — Recordings automatically expire", "value": "On" },
+        { "label": "Recording & transcription — Default expiration time", "value": "120 days (1–99,999; 'Recordings automatically expire' must be On)" },
+        { "label": "Recording & transcription — Copilot", "value": "On only with retained transcript (requires a Copilot license)" },
+        { "label": "Meeting engagement — External meeting chat", "value": "Off (users can't read/write chat in meetings hosted by untrusted external orgs)" },
+        { "label": "Content sharing — Watermark for shared content & video ⚠️ Teams Premium", "value": "On for both screen-share content and camera video" },
+        { "label": "Meeting chat copy/forward restriction ⚠️ Teams Premium", "value": "On (prevents copying/forwarding of meeting chat, live captions, and transcript)" },
+        { "label": "Participants can change their display name ⚠️ Teams Premium", "value": "Off (participants can't rename themselves in the meeting)" }
+      ],
+      "steps": [
+        "In the Teams admin center (admin.teams.microsoft.com), expand Meetings → Meeting policies, then open the Global (Org-wide default) policy (or the policy you're scoping).",
+        "Meeting join & lobby: set Who can bypass the lobby = People who were invited; Anonymous users can join a meeting = On; Anonymous users and dial-in callers can start a meeting = Off. (Confirm the org-wide Meetings > Meeting settings > Anonymous users can join a meeting is also On.)",
+        "Recording & transcription: Meeting recording = On; Recordings automatically expire = On; Default expiration time = 120; Copilot = On only with retained transcript.",
+        "Meeting engagement: External meeting chat = Off.",
+        "Content sharing (Teams Premium): turn on the watermark for both shared content and video.",
+        "Teams Premium items: enable the meeting-chat copy/forward restriction, and set participants can change their display name = Off. Skip these if the tenant has no Teams Premium licenses.",
+        "Save. Allow up to 24 hours to propagate.",
+        "Note: users will see recordings expire after 120 days, watermarks on shared screen/video, external guests may now land in the lobby, no self-rename, and local-disk recording gone (OneDrive/SharePoint only) — brief them in advance."
+      ],
+      "docs": "https://learn.microsoft.com/microsoftteams/settings-policies-reference#meetings"
+    }
+  }
+}
