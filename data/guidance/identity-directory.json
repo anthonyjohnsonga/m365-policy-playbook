@@ -1,0 +1,142 @@
+{
+  "meta": {
+    "tier": "Tier1",
+    "section": "Identity & Access — Authentication Methods (part 2 of 2: directory / device / consent / security defaults)",
+    "source": "Microsoft Learn (learn.microsoft.com/entra) — portal paths, setting labels, and defaults grounded via the Microsoft Learn MCP on 2026-07-03.",
+    "generalNotes": [
+      "These are the non-auth-method items filed under the Authentication Methods section — they live in User settings, Devices, External Identities, Enterprise applications, Security Defaults, and (one) the M365 admin center.",
+      "Sequencing matters: disabling Security Defaults (DefSecSettings) assumes the Conditional Access MFA policies are already deployed and On — otherwise MFA coverage drops to zero. Treat it as the last switch after the CA policies validate.",
+      "Roles vary: default-user-permissions and device settings need Global Administrator / Cloud Device Administrator; consent settings need Privileged Role Administrator; Security Defaults needs Conditional Access Administrator."
+    ]
+  },
+  "policies": {
+    "DefUserRolePerms": {
+      "requiredSettings": [
+        { "label": "Users can register applications", "value": "No" },
+        { "label": "Users can create security groups", "value": "No" },
+        { "label": "Restrict non-admin users from creating tenants", "value": "Yes (i.e. block tenant creation)" },
+        { "label": "Read other users", "value": "Left enabled — users can still read basic directory info" }
+      ],
+      "steps": [
+        "Entra ID > Users > User settings.",
+        "Under Default user role permissions: set 'Users can register applications' = No; 'Users can create security groups' = No; 'Restrict non-admin users from creating tenants' = Yes.",
+        "Save.",
+        "Note (MEDIUM impact): app developers / group owners who relied on self-service will now need an admin (or the App Developer / Groups roles) — grant those back to specific people as needed."
+      ],
+      "docs": "https://learn.microsoft.com/entra/fundamentals/users-default-permissions#restrict-member-users-default-permissions"
+    },
+    "GuestUserAccessConfig": {
+      "requiredSettings": [
+        { "label": "Guest user access", "value": "Guest user access is restricted to properties and memberships of their own directory objects (most restrictive)" },
+        { "label": "Guest invite settings", "value": "Only users assigned to specific admin roles (and the Guest Inviter role) can invite — not all members/guests" }
+      ],
+      "steps": [
+        "Entra ID > External Identities > External collaboration settings.",
+        "Set Guest user access = 'restricted to their own directory objects (most restrictive)'.",
+        "Set Guest invite settings so only admins / the Guest Inviter role can invite guests.",
+        "Save (guest changes can take up to ~15 min). This mirrors DirectoryGuestAccess and pairs with the CA guest policies."
+      ],
+      "docs": "https://learn.microsoft.com/entra/external-id/external-collaboration-settings-configure"
+    },
+    "AdminAppConsent": {
+      "requiredSettings": [
+        { "label": "Users can request admin consent to apps they are unable to consent to", "value": "Yes (enables the admin consent workflow)" },
+        { "label": "Reviewers", "value": "Select the users/groups/roles who receive and act on requests" },
+        { "label": "Notifications / expiry", "value": "Enable reviewer email notifications; set a request expiry (e.g. 30 days)" }
+      ],
+      "steps": [
+        "Entra ID > Enterprise apps > Consent and permissions > Admin consent settings.",
+        "Set 'Users can request admin consent to apps they are unable to consent to' = Yes.",
+        "Choose the reviewers, enable email notifications, and set the request expiry.",
+        "Save (can take up to an hour to enable). Pairs with UserConsentSettings — users request approval instead of being blocked outright."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/enterprise-apps/configure-admin-consent-workflow"
+    },
+    "UserConsentSettings": {
+      "requiredSettings": [
+        { "label": "User consent for applications", "value": "Allow user consent for apps from verified publishers, for selected permissions (built-in policy microsoft-user-default-low)" },
+        { "label": "Own-resource consent", "value": "Users can still consent for resources they own (their own chats / teams they own)" },
+        { "label": "Prerequisite", "value": "Classify which permissions count as 'low impact' (Consent and permissions > Permission classifications)" }
+      ],
+      "steps": [
+        "Entra ID > Enterprise apps > Consent and permissions > User consent settings.",
+        "Select 'Allow user consent for apps from verified publishers, for selected permissions'.",
+        "Under Permission classifications, confirm the low-impact permission set users may consent to.",
+        "Save. Anything else routes through the admin consent workflow (see AdminAppConsent)."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/enterprise-apps/configure-user-consent"
+    },
+    "SelfServicePassConfig": {
+      "requiredSettings": [
+        { "label": "Self-service sign-up (email-verified / viral)", "value": "Disabled — external people can't create accounts in your domain via self-service sign-up" },
+        { "label": "Primary control", "value": "Graph authorizationPolicy: allowedToSignUpEmailBasedSubscriptions = false (legacy MSOnline: Set-MsolCompanySettings -AllowEmailVerifiedUsers $false -AllowAdHocSubscriptions $false)" }
+      ],
+      "steps": [
+        "M365 Admin Center > Settings > Org Settings > Services > User-owned apps and services (turn off the self-service sign-up options shown there).",
+        "The reliable control is PowerShell/Graph: set allowedToSignUpEmailBasedSubscriptions = false on the authorization policy (or the legacy MSOnline AllowEmailVerifiedUsers / AllowAdHocSubscriptions = $false).",
+        "Note: LOW impact / verify-oriented — this blocks self-service/viral account creation on the domain. (Self-service trials & purchases of products is a separate control — see the M365 Admin Settings guidance.)"
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/enterprise-apps/disable-user-sign-in-portal"
+    },
+    "LocalAdministratorPassword": {
+      "requiredSettings": [
+        { "label": "Enable Microsoft Entra Local Administrator Password Solution (LAPS)", "value": "Yes (tenant-level enablement)" },
+        { "label": "Also required", "value": "A client-side LAPS policy (deployed via Intune) with BackUpDirectory = Microsoft Entra ID — the tenant toggle alone doesn't rotate anything" },
+        { "label": "Scope", "value": "Entra joined / hybrid-joined devices only (not Entra-registered); needs the April 2023+ Windows update" }
+      ],
+      "steps": [
+        "Entra ID > Devices > Overview > Device settings.",
+        "Set 'Enable Microsoft Entra Local Administrator Password Solution (LAPS)' = Yes, Save (needs at least Cloud Device Administrator).",
+        "Then deploy the client-side LAPS policy in Intune (Endpoint security > Account protection) with the backup directory set to Microsoft Entra ID.",
+        "Retrieve passwords later from Devices > Local administrator password recovery."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/devices/howto-manage-local-admin-passwords"
+    },
+    "UserDeviceQuota": {
+      "requiredSettings": [
+        { "label": "Maximum number of devices per user", "value": "20" }
+      ],
+      "steps": [
+        "Entra ID > Devices > Device settings.",
+        "Set 'Maximum number of devices per user' = 20.",
+        "Save. Note: LOW impact — limits how many devices one user can register/join (join and registered devices count against it)."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/devices/manage-device-identities#configure-device-settings"
+    },
+    "UserAllowedToRegister": {
+      "requiredSettings": [
+        { "label": "Users may register their devices with Microsoft Entra", "value": "All (allows device registration — required for MDM/MAM enrollment scenarios)" }
+      ],
+      "steps": [
+        "Entra ID > Devices > Device settings.",
+        "Set 'Users may register their devices with Microsoft Entra' = All.",
+        "Save. Note: LOW impact — this is an enabler (needed for Intune enrollment / BYOD registration), not a restriction."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/devices/manage-device-identities#configure-device-settings"
+    },
+    "ExternalUserLeaveConfig": {
+      "requiredSettings": [
+        { "label": "External user leave settings", "value": "Allow external users to leave your organization themselves (Yes)" }
+      ],
+      "steps": [
+        "Entra ID > External Identities > External collaboration settings.",
+        "Ensure 'Allow external users to remove themselves from your organization' = Yes.",
+        "Save. Note: LOW impact — a privacy/compliance nicety for guests; no effect on internal users."
+      ],
+      "docs": "https://learn.microsoft.com/entra/external-id/external-collaboration-settings-configure"
+    },
+    "DefSecSettings": {
+      "requiredSettings": [
+        { "label": "Security defaults", "value": "Disabled — replaced by the tenant's Conditional Access policies" },
+        { "label": "HARD prerequisite", "value": "CA MFA policies (MFA for internal users, admins, block legacy auth) must already be deployed and On, or MFA coverage drops to nothing" }
+      ],
+      "steps": [
+        "First confirm the Conditional Access baseline is On (see the CA guidance) — this switch has no safety net of its own.",
+        "Entra ID > Overview > Properties > Manage security defaults.",
+        "Set Security defaults = Disabled, Save.",
+        "Note (impact is LOW if CA is already live, HIGH if not): do this LAST, after the CA policies are validated out of Report-only. Impact rating in the master is deliberately conditional for this reason."
+      ],
+      "docs": "https://learn.microsoft.com/entra/fundamentals/security-defaults#disabling-security-defaults"
+    }
+  }
+}
