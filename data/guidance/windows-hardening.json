@@ -1,0 +1,176 @@
+{
+  "meta": {
+    "tier": "Tier1",
+    "section": "Endpoint Management — Windows (Phase 5 of 7: Security hardening config profiles / Settings Catalog)",
+    "source": "Microsoft Learn (learn.microsoft.com/intune + windows/security) — portal paths and Settings Catalog categories grounded via the Microsoft Learn MCP on 2026-07-03.",
+    "generalNotes": [
+      "All 13 are Windows device configuration profiles, almost all built in the Settings Catalog: Intune admin center > Devices > Configuration > Create > New policy > Platform = Windows 10 and later > Profile type = Settings catalog. Add the settings for the named category, then assign to the Windows device group.",
+      "Most are LOW-impact hardening and invisible to users; the exception (WHfB, MEDIUM) changes how people sign in. A few (Credential Guard/VBS) require a device reboot to take effect.",
+      "Many of these overlap with Intune's built-in Security Baseline for Windows — you can source them from the baseline instead of hand-building profiles, but keep one authoritative source per setting to avoid conflicts.",
+      "Validate on a pilot device: Devices > Configuration > (policy) > Per setting status should show Succeeded, not Error, before broadening assignment."
+    ]
+  },
+  "policies": {
+    "Win - Security - D - Hardening": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog" },
+        { "label": "Intent", "value": "~53 OS hardening settings — Structured Exception Handling (SEHOP) protection, RPC security, Remote Assistance restrictions, and related system controls" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Add the baseline hardening settings (SEHOP, RPC hardening, disable Remote Assistance, etc.) and assign to the Windows device group.",
+        "Note: LOW impact / invisible — general OS-level attack-surface hardening."
+      ],
+      "docs": "https://learn.microsoft.com/intune/configuration/settings-catalog"
+    },
+    "Win - Security - D - Defender Security Center": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog (Windows Security / Defender Security Center)" },
+        { "label": "Intent", "value": "Control which Windows Security app panels are visible; hide/lock areas users shouldn't change; set the org contact info" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Add Windows Security app (Defender Security Center) settings to show/hide panels and set org support info; assign to the Windows device group.",
+        "Note: LOW impact — cosmetic/guard-rail control of the Windows Security UI."
+      ],
+      "docs": "https://learn.microsoft.com/intune/configuration/settings-catalog"
+    },
+    "Win - Security - D - Defender SmartScreen": {
+      "requiredSettings": [
+        { "label": "Windows SmartScreen", "value": "Enable SmartScreen for apps/files = On; block bypass of warnings (PreventOverride) = On" },
+        { "label": "Edge SmartScreen", "value": "Microsoft Edge > SmartScreen settings > Configure Microsoft Defender SmartScreen = Enabled (and block PUA)" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Enable SmartScreen for Windows (apps/files, prevent override) and for Microsoft Edge (Configure Microsoft Defender SmartScreen + block potentially unwanted apps).",
+        "Assign to the Windows device group. Note: LOW impact — warns/blocks known-malicious downloads and sites."
+      ],
+      "docs": "https://learn.microsoft.com/intune/configuration/settings-catalog"
+    },
+    "Win - Security - D - Device Guard / Memory / LSA / VBS": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog — category Device Guard" },
+        { "label": "Credential Guard (LSA protection)", "value": "Enabled with UEFI lock (or 'without lock' if you need to be able to disable remotely)" },
+        { "label": "Virtualization Based Security", "value": "Turn On VBS = Enabled; Secure Boot with DMA protection (enabling Credential Guard turns these on)" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Under Device Guard set Credential Guard = Enabled with UEFI lock and Turn On Virtualization Based Security = Enabled (VBS + Secure Boot/DMA come along with it).",
+        "Assign to the Windows device group. A reboot is required for these to take effect.",
+        "Note: LOW impact / invisible but reboot-gated — kernel/credential isolation against pass-the-hash and memory attacks. 'Enabled with UEFI lock' can't be turned off remotely, so choose deliberately."
+      ],
+      "docs": "https://learn.microsoft.com/windows/security/identity-protection/credential-guard/configure"
+    },
+    "Win - Security - D - Config Refresh": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog" },
+        { "label": "Config Refresh cadence", "value": "Enabled with a periodic refresh (e.g. every 90 minutes) so local tampering/drift is re-corrected to policy" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Enable Config Refresh and set the refresh cadence; assign to the Windows device group.",
+        "Note: LOW impact / invisible — periodically re-applies MDM policy to undo configuration drift between normal check-ins."
+      ],
+      "docs": "https://learn.microsoft.com/windows/client-management/config-refresh"
+    },
+    "Win - Security - D - Windows Hello For Business": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog (category Windows Hello for Business) or Endpoint security > Account protection profile" },
+        { "label": "Use Windows Hello for Business", "value": "Enabled (true)" },
+        { "label": "Require security device (TPM)", "value": "True" },
+        { "label": "PIN policy", "value": "Minimum PIN length per baseline; allow biometric gestures (fingerprint/face)" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog (or Endpoint security > Account protection).",
+        "Set Use Windows Hello For Business = true, Require Security Device = true, minimum PIN length, and allow biometrics.",
+        "Assign to the Windows device/user group. (A tenant-wide WHfB policy also exists at Devices > Windows > Windows Enrollment — use one authoritative source to avoid PIN-policy conflicts.)",
+        "Note (MEDIUM impact): users set up a PIN/biometric sign-in in place of a password — a visible, one-time enrollment step; brief users so they aren't surprised at next sign-in."
+      ],
+      "docs": "https://learn.microsoft.com/windows/security/identity-protection/hello-for-business/configure"
+    },
+    "Win - Security - D - Internet Explorer": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog (Internet Explorer / legacy)" },
+        { "label": "Intent", "value": "Harden the legacy IE engine — disable insecure features / restrict zones (IE11 is retired; Edge IE mode is the modern path)" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Apply the IE hardening settings from the baseline; assign to the Windows device group.",
+        "Note: LOW impact — legacy-browser hardening; most orgs use Edge IE mode for any remaining IE-dependent sites."
+      ],
+      "docs": "https://learn.microsoft.com/intune/configuration/settings-catalog"
+    },
+    "Win - Security - D - Printing": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog (Printers / Print security)" },
+        { "label": "Intent", "value": "Harden printing — e.g. restrict Point-and-Print to admins, block spooler-driven privilege escalation (PrintNightmare mitigations)" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Apply the print-security settings (Point-and-Print restrictions, package-point-and-print, spooler hardening) per the baseline; assign to the Windows device group.",
+        "Note: LOW impact — mitigates print-spooler attack vectors; verify legitimate network printers still install for users."
+      ],
+      "docs": "https://learn.microsoft.com/intune/configuration/settings-catalog"
+    },
+    "Win - Security - D - Audit And Event Logging": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog (Auditing / Advanced Audit Policy)" },
+        { "label": "Intent", "value": "Turn on the baseline Windows audit categories (logon/account, object access, policy change, etc.) and event-log sizing for investigation readiness" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Enable the baseline advanced-audit categories and set event-log retention/size; assign to the Windows device group.",
+        "Note: LOW impact / invisible — improves forensic/audit coverage; pairs with WUFB reports and MDE for visibility."
+      ],
+      "docs": "https://learn.microsoft.com/intune/configuration/settings-catalog"
+    },
+    "Win - Security - D - Device Login & Lock": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog (Device Lock / Local Policies Security Options)" },
+        { "label": "Intent", "value": "Auto-lock/inactivity timeout, require password on resume, hide last signed-in user, limit lock-screen exposure" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Set the machine inactivity limit (auto-lock), require password on resume/screensaver, and the lock-screen hardening options; assign to the Windows device group.",
+        "Note: LOW impact — devices lock after inactivity and prompt for credentials on resume."
+      ],
+      "docs": "https://learn.microsoft.com/intune/configuration/settings-catalog"
+    },
+    "Win - Access Control - D - User Rights": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog (User Rights Assignment)" },
+        { "label": "Intent", "value": "Constrain privileged rights — who can log on locally / over RDP, deny network logon to local accounts, restrict 'debug programs' / 'take ownership', etc." }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Apply the baseline User Rights Assignments (limit sensitive privileges to the intended accounts/groups); assign to the Windows device group.",
+        "Note: LOW impact if scoped correctly — but test carefully, since over-tightening a right (e.g. 'Allow log on locally') can lock out legitimate service/admin accounts."
+      ],
+      "docs": "https://learn.microsoft.com/intune/configuration/settings-catalog"
+    },
+    "Win - Access Control - D - Local Security Policies": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog (Local Policies / Security Options)" },
+        { "label": "Intent", "value": "Local security options — account lockout thresholds, audit policy, network access (anonymous SID/name translation), UAC behavior, LSA hardening" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Apply the baseline Local Policies / Security Options (lockout, UAC, network access restrictions, LSA); assign to the Windows device group.",
+        "Note: LOW impact / invisible — device-local security posture aligned to the baseline."
+      ],
+      "docs": "https://learn.microsoft.com/intune/configuration/settings-catalog"
+    },
+    "Win - Network - D - Security": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog (Network / SMB / Authentication)" },
+        { "label": "Intent", "value": "Network protocol hardening — require SMB signing, disable SMBv1, LDAP signing/channel binding, restrict NTLM, disable insecure guest logons" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Apply the network-security settings (SMB signing, no SMBv1, LDAP signing, NTLM restrictions, no insecure guest auth); assign to the Windows device group.",
+        "Note: LOW impact for modern environments — but if any legacy device/app relies on SMBv1 or unsigned SMB, test first."
+      ],
+      "docs": "https://learn.microsoft.com/intune/configuration/settings-catalog"
+    }
+  }
+}
