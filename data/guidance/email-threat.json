@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "tier": "Tier1",
+    "section": "Email & Threat Protection",
+    "source": "Microsoft Learn (learn.microsoft.com/exchange) — portal path, PowerShell parameters, and defaults grounded via the Microsoft Learn MCP on 2026-07-03. The other policies in this section share names with the Email Security playbook and inherit that guidance; this file covers the one Tier 1-only policy.",
+    "generalNotes": [
+      "Reply-all storm protection is built into Exchange Online and on by default — the baseline values match Microsoft's platform defaults, so this is a verify-only item rather than something you build.",
+      "There's no configuration page in the Exchange admin center: the EAC only shows a read-only report (Reports > Mail flow > Reply-all storm protection). Any change is made in Exchange Online PowerShell with Set-TransportConfig."
+    ]
+  },
+  "policies": {
+    "Mail Flow Reply All Storm Protection": {
+      "requiredSettings": [
+        { "label": "ReplyAllStormProtectionEnabled", "value": "True (on by default)" },
+        { "label": "ReplyAllStormDetectionMinimumRecipients", "value": "2500 (a message must have at least this many recipients to be storm-eligible)" },
+        { "label": "ReplyAllStormDetectionMinimumReplies", "value": "10 (reply-alls before blocking kicks in)" },
+        { "label": "ReplyAllStormBlockDurationHours", "value": "6 (further reply-alls to the thread are blocked for this long)" }
+      ],
+      "steps": [
+        "Verify current settings without changing anything: in the new Exchange admin center, go to Reports > Mail flow > Reply-all storm protection — the top of the report shows Status, Minimum recipients, Minimum reply-alls, and Block duration hours (needs View-Only Configuration / Organization Transport Settings, included in Organization Management).",
+        "Or confirm in Exchange Online PowerShell: Get-TransportConfig | Select-Object ReplyAllStormProtectionEnabled, ReplyAllStormDetectionMinimumRecipients, ReplyAllStormDetectionMinimumReplies, ReplyAllStormBlockDurationHours",
+        "Only if a value has drifted from the baseline, correct it via PowerShell (there's no EAC config page), e.g.: Set-TransportConfig -ReplyAllStormProtectionEnabled $true -ReplyAllStormDetectionMinimumRecipients 2500 -ReplyAllStormDetectionMinimumReplies 10 -ReplyAllStormBlockDurationHours 6",
+        "Note: invisible to virtually all users — it only matters for very large distribution lists (2,500+ recipients). Changing settings mid-storm won't affect the current storm, only future ones."
+      ],
+      "docs": "https://learn.microsoft.com/exchange/monitoring/mail-flow-reports/reply-all-storm-protection-report"
+    }
+  }
+}
