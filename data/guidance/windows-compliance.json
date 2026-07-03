@@ -2,10 +2,10 @@
   "meta": {
     "tier": "Tier1",
     "section": "Endpoint Management — Windows (Phase 1 of 7: Compliance policies)",
-    "source": "Microsoft Learn (learn.microsoft.com/intune) — Windows 10/11 compliance policy structure. NOTE: drafted from established Intune knowledge on 2026-07-03 while the Learn MCP was unavailable; re-verify setting labels/doc links on next pass.",
+    "source": "Microsoft Learn (learn.microsoft.com/intune/device-security/compliance/ref-windows-settings) — Windows 10/11 compliance settings, verified against the settings reference via the Microsoft Learn MCP on 2026-07-03.",
     "generalNotes": [
       "These four rows are the setting GROUPS of a Windows 10/11 device compliance policy, not four separate policies. In practice you create one policy (Intune admin center > Devices > Compliance > Create policy > Windows 10 and later) and configure each group on the Compliance settings tab: Device Health, Device Properties, System Security, and Microsoft Defender for Endpoint.",
-      "Set the enforcement once for the whole policy on the 'Actions for noncompliance' tab (the default 'Mark device noncompliant' action; add a grace period and optional user email), then assign to the Windows device/user group. The master's per-row grace windows (~12h for OS version, ~24h for System Security) are the baseline intent — Intune schedules this action in days, so use the nearest equivalent.",
+      "Set the enforcement once for the whole policy on the 'Actions for noncompliance' tab (the default 'Mark device noncompliant' action; add a grace period and optional user email), then assign to the Windows device/user group. The admin center schedules this action in whole DAYS (0–365) — so the master's ~24h grace = 1 day; a sub-day window like ~12h (0.5 day) can only be set via Microsoft Graph, not the portal.",
       "Compliance only bites when paired with a Conditional Access 'require compliant device' grant — confirm that CA policy exists, or non-compliant devices won't actually be blocked.",
       "Before assigning broadly, check the Devices > Compliance monitoring reports to see how many devices would flip to non-compliant (especially OS Version), and stage with a pilot group first."
     ]
@@ -15,7 +15,7 @@
       "requiredSettings": [
         { "label": "Group", "value": "Device Properties" },
         { "label": "Minimum OS version", "value": "10.0.26200 (Windows 11, 25H2 / build 26200) — per the Inforcer baseline" },
-        { "label": "Grace period", "value": "~12 hours before a non-compliant device is blocked (set on Actions for noncompliance)" }
+        { "label": "Grace period", "value": "Baseline intent ~12h; admin center is whole days (use 1 day, or 0.5 day via Graph) — set on Actions for noncompliance" }
       ],
       "steps": [
         "Intune admin center > Devices > Compliance > (your Windows 10/11 policy) > Compliance settings > Device Properties.",
@@ -23,14 +23,14 @@
         "On Actions for noncompliance, set the 'Mark device noncompliant' grace period to the baseline window.",
         "Note (HIGH impact): any device on Windows 10 or an older Win 11 build is marked non-compliant and loses access after the grace period. Audit the fleet's OS versions and stage the rollout — this is the single most disruptive compliance setting."
       ],
-      "docs": "https://learn.microsoft.com/intune/protect/compliance-policy-create-windows"
+      "docs": "https://learn.microsoft.com/intune/device-security/compliance/ref-windows-settings"
     },
     "Win - D - System Security": {
       "requiredSettings": [
         { "label": "Group", "value": "System Security" },
         { "label": "Device Security", "value": "Firewall = Require; Trusted Platform Module (TPM) = Require; Antivirus = Require; Antispyware = Require" },
         { "label": "Microsoft Defender", "value": "Microsoft Defender Antimalware = Require; Real-time protection = Require; Security intelligence (signatures) up to date = Require" },
-        { "label": "Grace period", "value": "~24 hours (set on Actions for noncompliance)" }
+        { "label": "Grace period", "value": "~24 hours = 1 day (set on Actions for noncompliance)" }
       ],
       "steps": [
         "Intune admin center > Devices > Compliance > (your Windows policy) > Compliance settings > System Security.",
@@ -38,7 +38,7 @@
         "Under Microsoft Defender set Microsoft Defender Antimalware, Real-time protection, and signature-up-to-date all to Require.",
         "Note (MEDIUM impact): devices with a security feature disabled or stale Defender signatures go non-compliant after the grace period; users may be prompted to update Defender / re-enable protection."
       ],
-      "docs": "https://learn.microsoft.com/intune/protect/compliance-policy-create-windows"
+      "docs": "https://learn.microsoft.com/intune/device-security/compliance/ref-windows-settings"
     },
     "Win - D - Encryption": {
       "requiredSettings": [
@@ -53,7 +53,7 @@
         "Set Require BitLocker = Require, Require Secure Boot = Require, Require code integrity = Require; on System Security set 'Encryption of data storage on device' = Require.",
         "Note (MEDIUM impact): unencrypted devices go non-compliant; BitLocker may trigger a one-time encryption pass (temporary performance hit) and the user is prompted to save a recovery key. Pair with the BitLocker disk-encryption profile (Phase 3) so keys are escrowed to Entra/Intune."
       ],
-      "docs": "https://learn.microsoft.com/intune/protect/compliance-policy-create-windows"
+      "docs": "https://learn.microsoft.com/intune/device-security/compliance/ref-windows-settings"
     },
     "Win - D - Defender for Endpoint": {
       "requiredSettings": [
@@ -67,7 +67,7 @@
         "Set 'Require the device to be at or under the machine risk score' to the baseline threshold.",
         "Note (MEDIUM impact): a device whose MDE risk score exceeds the threshold (active threats) is marked non-compliant and can lose resource access until remediated; clean devices are unaffected. Needs MDE Plan 1 (included in Business Premium)."
       ],
-      "docs": "https://learn.microsoft.com/intune/protect/advanced-threat-protection"
+      "docs": "https://learn.microsoft.com/intune/device-security/compliance/ref-windows-settings#microsoft-defender-for-endpoint"
     }
   }
 }
