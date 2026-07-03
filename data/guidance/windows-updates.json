@@ -1,0 +1,139 @@
+{
+  "meta": {
+    "tier": "Tier1",
+    "section": "Endpoint Management — Windows (Phase 4 of 7: Windows Update / WUFB)",
+    "source": "Microsoft Learn (learn.microsoft.com/intune/device-updates/windows + wufb-reports) — portal paths, ring/feature/quality settings grounded via the Microsoft Learn MCP on 2026-07-03.",
+    "generalNotes": [
+      "The update surface lives at Devices > Windows > Manage updates (Windows 10 and later updates) with tabs: Update rings, Feature updates, Quality updates, Driver updates. The app-update pieces (Office, Edge, Defender AV) and the Secure Boot certificate item are Settings Catalog configuration profiles; WUFB Reports is under Reports.",
+      "The two 'WUFB' ring rows are the two halves of one Update ring policy: WUFB Behavior = the User experience tab (active hours, deadlines, restart), WUFB Production Ring = the Update settings tab (deferrals). Configure them in the same ring.",
+      "If you use BOTH an update ring and a Feature update policy on a device, set the ring's Feature update deferral = 0 so the two don't double-delay feature upgrades.",
+      "Assign to Windows device groups; use separate rings (pilot vs broad) for staged rollout of quality/feature updates."
+    ]
+  },
+  "policies": {
+    "Win - Updates - D - WUFB Behavior": {
+      "requiredSettings": [
+        { "label": "Policy", "value": "Devices > Windows > Update rings > (ring) > User experience settings" },
+        { "label": "Automatic update behavior", "value": "Auto install at maintenance time, outside active hours (active hours 8 AM–5 PM)" },
+        { "label": "Use deadline settings", "value": "Allow; Deadline for quality updates = 2 days; Grace period = 1 day; Auto reboot before deadline = Yes" },
+        { "label": "Option to pause updates", "value": "Disable" }
+      ],
+      "steps": [
+        "Intune admin center > Devices > Windows > Update rings > create/open the production ring > User experience settings.",
+        "Set active hours (8 AM–5 PM), auto-install at maintenance time, deadline for quality updates = 2 and grace period = 1, auto-reboot before deadline = Yes, disable user pause.",
+        "Assign to the Windows device group.",
+        "Note (MEDIUM impact): devices install and reboot within the deadline+grace window; users get restart warnings but can't indefinitely defer."
+      ],
+      "docs": "https://learn.microsoft.com/intune/device-updates/windows/manage-update-rings"
+    },
+    "Win - Updates - D - WUFB Production Ring": {
+      "requiredSettings": [
+        { "label": "Policy", "value": "Devices > Windows > Update rings > (ring) > Update settings" },
+        { "label": "Quality update deferral period", "value": "0 days (install promptly)" },
+        { "label": "Feature update deferral period", "value": "30 days (or 0 if a Feature update policy governs the version)" },
+        { "label": "Microsoft product updates / drivers", "value": "Allow" }
+      ],
+      "steps": [
+        "Same Update ring > Update settings tab.",
+        "Set Quality update deferral = 0; Feature update deferral = 30 (set 0 if you also use the Feature update policy below); allow Microsoft product updates and drivers.",
+        "Assign to the Windows device group.",
+        "Note (MEDIUM impact): quality updates land quickly; feature (major) upgrades are held ~30 days for stability."
+      ],
+      "docs": "https://learn.microsoft.com/intune/device-updates/windows/manage-update-rings"
+    },
+    "Win - Updates - D - WUFB Feature Production Ring": {
+      "requiredSettings": [
+        { "label": "Policy type", "value": "Devices > Windows > Feature updates > Create profile" },
+        { "label": "Feature update version", "value": "The specific Windows feature version to hold devices at (controls/prevents the jump to a newer release)" }
+      ],
+      "steps": [
+        "Intune admin center > Devices > Windows > Feature updates > Create profile.",
+        "Choose the target Windows feature version to lock devices to, and the rollout option.",
+        "Assign to the Windows device group. Remember to set the update ring's feature-update deferral = 0 so the two don't conflict.",
+        "Note: LOW impact — controls WHICH feature release devices run; prevents unplanned major upgrades."
+      ],
+      "docs": "https://learn.microsoft.com/intune/device-updates/windows/manage-feature-updates"
+    },
+    "Win - Updates - D - Hotpatch": {
+      "requiredSettings": [
+        { "label": "Policy type", "value": "Devices > Windows > Quality updates > Create > Windows quality update policy" },
+        { "label": "When available, apply without restarting the device (Hotpatch)", "value": "Allow" }
+      ],
+      "steps": [
+        "Intune admin center > Devices > Windows updates > Quality updates > Create > Windows quality update policy.",
+        "Set 'When available, apply without restarting the device (Hotpatch)' = Allow.",
+        "Assign to the Windows device group.",
+        "Note: LOW impact / positive — eligible monthly security updates install without a reboot (needs VBS on and an eligible Win 11 Enterprise build; ineligible devices just get the normal cumulative update). Deferral/active-hours settings still apply."
+      ],
+      "docs": "https://learn.microsoft.com/intune/device-updates/windows/configure-hotpatch"
+    },
+    "Win - Updates - D - Secure Boot Certificate": {
+      "requiredSettings": [
+        { "label": "Policy type", "value": "Devices > Configuration > Settings catalog profile" },
+        { "label": "Intent", "value": "Opt devices into the Windows Secure Boot certificate (UEFI CA) update servicing so Secure Boot keeps validating boot components after the CA rollover" }
+      ],
+      "steps": [
+        "Intune admin center > Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Add the Secure Boot certificate / UEFI CA update servicing setting (System > Secure Boot area) and enable it per the baseline.",
+        "Assign to the Windows device group.",
+        "Note: LOW impact / invisible — keeps Secure Boot trust current; part of Microsoft's Secure Boot certificate rollover."
+      ],
+      "docs": "https://learn.microsoft.com/intune/configuration/settings-catalog"
+    },
+    "Win - Updates - D - Office Apps": {
+      "requiredSettings": [
+        { "label": "Policy type", "value": "Devices > Configuration > Settings catalog profile (Microsoft Office update settings)" },
+        { "label": "Update channel", "value": "Monthly Enterprise Channel (predictable monthly cadence)" },
+        { "label": "Enable automatic updates", "value": "Enabled; optionally set a target version / deadline" }
+      ],
+      "steps": [
+        "Intune admin center > Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Add the Microsoft Office (Office 365 / Microsoft 365 Apps) update settings: set the update channel to Monthly Enterprise Channel and enable automatic updates.",
+        "Assign to the Windows device group.",
+        "Note: LOW impact — keeps Microsoft 365 Apps patched on a predictable channel."
+      ],
+      "docs": "https://learn.microsoft.com/intune/configuration/settings-catalog"
+    },
+    "Win - Updates - D - Microsoft Edge": {
+      "requiredSettings": [
+        { "label": "Policy type", "value": "Devices > Configuration > Settings catalog profile (Microsoft Edge Update settings)" },
+        { "label": "Update channel", "value": "Stable" },
+        { "label": "Automatic updates", "value": "Enabled (allow Edge to auto-update on the Stable channel)" }
+      ],
+      "steps": [
+        "Intune admin center > Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Add the Microsoft Edge Update settings: keep the Stable channel and enable automatic updates.",
+        "Assign to the Windows device group.",
+        "Note: LOW impact — keeps Edge current on the Stable channel."
+      ],
+      "docs": "https://learn.microsoft.com/intune/configuration/settings-catalog"
+    },
+    "Win - Updates - D - Defender Antivirus": {
+      "requiredSettings": [
+        { "label": "Policy type", "value": "Devices > Configuration > Settings catalog profile (Microsoft Defender update settings)" },
+        { "label": "Security intelligence update interval", "value": "Frequent checks (e.g. every few hours) so signatures stay current" },
+        { "label": "Update channels", "value": "Platform / engine / security-intelligence channels per baseline (typically default/GA cadence)" }
+      ],
+      "steps": [
+        "Intune admin center > Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Add the Microsoft Defender signature/engine update settings: set the security-intelligence update interval and update channels.",
+        "Assign to the Windows device group.",
+        "Note: LOW impact — keeps Defender AV definitions/engine fresh; complements the Defender Antivirus protection policy (Phase 2)."
+      ],
+      "docs": "https://learn.microsoft.com/intune/protect/endpoint-security-antivirus-policy"
+    },
+    "Win - Monitoring - D - WUFB Reports": {
+      "requiredSettings": [
+        { "label": "Feature", "value": "Windows Update for Business reports — cloud reporting on update compliance/alerts" },
+        { "label": "Prerequisite", "value": "Devices must send the required diagnostic data (Windows diagnostic data enabled via the telemetry config profile)" }
+      ],
+      "steps": [
+        "Enable Windows Update for Business reports (Reports > Windows updates, or the WUFB reports workbook) and confirm the reporting configuration.",
+        "Ensure devices send required diagnostic data (see the Telemetry config profile in Phase 6) so they show up in the reports.",
+        "Review update compliance and the Alerts data type for devices failing updates.",
+        "Note: LOW impact / admin-only — reporting/visibility, no device-facing change."
+      ],
+      "docs": "https://learn.microsoft.com/windows/deployment/update/wufb-reports-overview"
+    }
+  }
+}
