@@ -67,13 +67,17 @@ opens to a blank page) at **`http://127.0.0.1:8080`**. Press `Ctrl+C` in the con
 ### 🐳 Docker &nbsp;— Linux server / homelab
 
 A containerized install that bundles PowerShell, the modules, and Chromium (so **PDF reports work**),
-served on **port 3020**. The image is **private** on GHCR, so log in once with a GitHub token that
-has the `read:packages` scope:
+served on **port 3020**. Managed entirely with **Docker Compose** — no `docker run` incantations to
+remember.
+
+Clone (or copy) the repo so you have the `Dockerfile` and `docker-compose.yml`, then from that folder:
 
 ```bash
-docker login ghcr.io -u <your-github-username>   # paste a Personal Access Token as the password
-docker compose up -d                             # then browse to http://localhost:3020
+docker compose up -d --build     # build the image from source and start it
+                                 # → then browse to http://localhost:3020
 ```
+
+Building from source needs **no registry login**. To pull the prebuilt image instead, see below.
 
 <details>
 <summary><strong>📄 docker-compose.yml</strong></summary>
@@ -82,7 +86,7 @@ docker compose up -d                             # then browse to http://localho
 services:
   playbook:
     image: ghcr.io/anthonyjohnsonga/m365-policy-playbook:latest
-    build: .                       # optional — build locally instead of pulling
+    build: .                       # build locally from the Dockerfile (docker compose up --build)
     container_name: m365-policy-playbook
     restart: unless-stopped
     ports:
@@ -99,13 +103,27 @@ volumes:
   reports:
   masters:
 ```
+</details>
+
+<details>
+<summary><strong>Prefer the prebuilt image instead of building?</strong></summary>
+
+The image is **private** on GHCR, so log in once with a GitHub token that has the
+`read:packages` scope, then pull rather than build:
 
 ```bash
-docker compose pull && docker compose up -d   # update to the latest image
-docker compose logs -f                         # watch the server log
-docker compose down                            # stop (your data/volumes are kept)
+docker login ghcr.io -u <your-github-username>   # paste a Personal Access Token as the password
+docker compose pull && docker compose up -d      # then browse to http://localhost:3020
 ```
 </details>
+
+**Everyday Compose commands:**
+
+```bash
+docker compose up -d --build   # rebuild after pulling new code, then (re)start
+docker compose logs -f         # watch the server log
+docker compose down            # stop (your data/volumes are kept)
+```
 
 > ⚠️ The app has **no login** and holds **one active engagement** at a time — keep it on
 > `localhost` / VPN and treat it as a single-operator tool. Full guide: **[SETUP.md §14](SETUP.md)**.

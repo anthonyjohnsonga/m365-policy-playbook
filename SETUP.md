@@ -339,35 +339,61 @@ NAS, or VM. The image bundles PowerShell, the helper modules, and Chromium (so
 > below) and treat it as a single-operator tool, not a shared team app.
 
 ### Prerequisites
-- A Linux host with **Docker** and **Docker Compose**.
-- The image is **private**, so you need a **GitHub Personal Access Token** with
-  the `read:packages` scope (GitHub → Settings → Developer settings → Personal
-  access tokens → *Tokens (classic)* → Generate, tick **read:packages**).
+- A Linux host with **Docker** and the **Docker Compose** plugin
+  (`docker compose version` should print a version).
+- The repo files on that host — at minimum the **`Dockerfile`** and
+  **`docker-compose.yml`** (a `git clone` or a copy of the folder). Everything
+  below is run from the folder that contains `docker-compose.yml`.
 
-### 1. Log in to the registry (one time)
-```bash
-docker login ghcr.io -u <your-github-username>
-# paste the Personal Access Token when it asks for a password
+Building the image from source (the recommended path below) needs **no registry
+login**. You only need a GitHub token if you'd rather pull the prebuilt private
+image — see the note after step 2.
+
+### 1. Review the compose file
+The repo ships a ready-to-use **`docker-compose.yml`**. Open it and set **`TZ`**
+to your timezone (so overdue / due-soon dates are correct). It publishes the app
+on the host loopback only (`127.0.0.1:3020`) and stores your data in three named
+volumes — you normally don't need to change anything else:
+
+```yaml
+services:
+  playbook:
+    image: ghcr.io/anthonyjohnsonga/m365-policy-playbook:latest
+    build: .                       # build locally from the Dockerfile
+    container_name: m365-policy-playbook
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3020:3020"      # host loopback only; VPN/SSH-tunnel for remote
+    environment:
+      TZ: America/New_York         # ← set to your timezone
+    volumes:
+      - clients:/app/data/clients  # saved client working files
+      - reports:/app/reports       # generated Excel / PDF reports
+      - masters:/app/data/masters  # editable master playbooks (seeded from image)
+
+volumes:
+  clients:
+  reports:
+  masters:
 ```
 
-### 2a. Run with Docker Compose (recommended)
-Grab `docker-compose.yml` from the repo root, then in that folder:
+### 2. Build and start it
+From the folder with `docker-compose.yml`:
 ```bash
-docker compose pull
-docker compose up -d
+docker compose up -d --build
 ```
+This builds the image from the `Dockerfile` (PowerShell + modules + Chromium),
+creates the volumes, and starts the container in the background. Re-run the same
+command any time you pull new code to rebuild and restart.
 
-### 2b. …or a single `docker run` (no compose file needed)
-```bash
-docker run -d --name m365-policy-playbook \
-  -p 127.0.0.1:3020:3020 \
-  -e TZ=America/New_York \
-  -v m365_clients:/app/data/clients \
-  -v m365_reports:/app/reports \
-  -v m365_masters:/app/data/masters \
-  --restart unless-stopped \
-  ghcr.io/anthonyjohnsonga/m365-policy-playbook:latest
-```
+> **Prefer the prebuilt image instead of building?** It's **private** on GHCR, so
+> get a **GitHub Personal Access Token** with the `read:packages` scope (GitHub →
+> Settings → Developer settings → Personal access tokens → *Tokens (classic)* →
+> tick **read:packages**), then:
+> ```bash
+> docker login ghcr.io -u <your-github-username>   # paste the token as the password
+> docker compose pull && docker compose up -d
+> ```
 
 ### 3. Open it
 Browse to **http://localhost:3020** *on the server* (it's published to the host
@@ -375,39 +401,50 @@ loopback only). To reach it from another machine use an **SSH tunnel** or a
 **VPN** — don't expose 3020 to the network, since there's no authentication.
 
 ### Your data (named volumes)
-Saved work lives in three Docker volumes, so it survives restarts and updates:
+Saved work lives in three Compose-managed volumes, so it survives restarts,
+rebuilds, and updates:
 
-| Volume | Holds |
+| Volume (in compose) | Holds |
 |---|---|
-| `m365_clients` | per-client working files (`.xlsx`) |
-| `m365_reports` | generated Excel / PDF reports |
-| `m365_masters` | the master playbooks (kept editable so the in-app *Manage master* edits persist) |
+| `clients` | per-client working files (`.xlsx`) |
+| `reports` | generated Excel / PDF reports |
+| `masters` | the master playbooks (kept editable so the in-app *Manage master* edits persist) |
 
-To **back up**, archive a volume, e.g.:
+Compose prefixes the on-disk volume names with the project (the folder name), so
+the real names look like `<folder>_clients`. List the exact names with:
 ```bash
-docker run --rm -v m365_clients:/data -v "$PWD":/backup alpine \
+docker volume ls        # find the real names, e.g. microsoftwebapp_clients
+```
+
+To **back up** a volume, archive it by its real name, e.g.:
+```bash
+docker run --rm -v <folder>_clients:/data -v "$PWD":/backup alpine \
   tar czf /backup/clients-backup.tgz -C /data .
 ```
 (Prefer files you can see directly on the host? Swap the named volumes for bind
 mounts to host folders in `docker-compose.yml`.)
 
 ### Common commands
+Run these from the folder with `docker-compose.yml`:
 ```bash
-docker compose logs -f                          # watch the server log
-docker compose pull && docker compose up -d     # update to the latest image
-docker compose down                             # stop (data/volumes are kept)
+docker compose up -d --build     # rebuild from source, then (re)start
+docker compose logs -f           # watch the server log
+docker compose restart           # restart without rebuilding
+docker compose down              # stop (data/volumes are kept)
 ```
 
 ### Notes & gotchas
-- **Port already in use?** Change the host side of the mapping (e.g.
-  `127.0.0.1:3025:3020`); the app still listens on 3020 inside the container.
-- **Timezone:** set `TZ` (above) to your zone so the overdue / due-soon dates
-  match your locale instead of UTC.
-- **Master updates:** because `m365_masters` is persisted, a newer image's
-  updated baseline masters won't overwrite an existing masters volume — edit
-  masters via the app, or reset just that volume to pick up image updates.
-- **Build it yourself** instead of pulling: from a clone of the repo run
-  `docker compose up -d --build` (the compose file includes a `build:` line).
+- **Port already in use?** Change the host side of the mapping in
+  `docker-compose.yml` (e.g. `127.0.0.1:3025:3020`); the app still listens on
+  3020 inside the container. Re-run `docker compose up -d` to apply.
+- **Timezone:** set `TZ` in the compose file to your zone so the overdue /
+  due-soon dates match your locale instead of UTC.
+- **Master updates:** because the `masters` volume is persisted, a rebuilt or
+  newer image's updated baseline masters won't overwrite an existing masters
+  volume — edit masters via the app, or reset just that volume to pick up the
+  image's copy.
+- **Pick up new code:** after `git pull` (or copying in newer files), re-run
+  `docker compose up -d --build` to rebuild the image and restart.
 
 ---
 
