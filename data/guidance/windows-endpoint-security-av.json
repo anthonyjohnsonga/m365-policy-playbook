@@ -1,0 +1,98 @@
+{
+  "meta": {
+    "tier": "Tier1",
+    "section": "Endpoint Management — Windows (Phase 2 of 7: Endpoint Security — Antivirus / ASR / Defender for Endpoint)",
+    "source": "Microsoft Learn (learn.microsoft.com/intune + learn.microsoft.com/defender-endpoint) — portal paths, profile types, and settings grounded via the Microsoft Learn MCP on 2026-07-03.",
+    "generalNotes": [
+      "All of these are Endpoint security policies in the Intune admin center (Endpoint security node). The pattern is the same for each: Create Policy > select Platform = Windows and the named Profile > configure > assign to the Windows device group.",
+      "Do them in order: (1) turn on the Defender for Endpoint connector (DefenderForEndpointSettings), (2) onboard devices via the EDR policy (MDE Onboarding), then (3) the Antivirus, ASR Rules, Exploit Protection, and Device Control policies — the last group only reports/works once devices are onboarded.",
+      "Roll out ASR Rules and Device Control in AUDIT mode first, review the Defender/ASR reports for false positives, then switch to Block. This is the safe path for the two settings that can actually break a user workflow.",
+      "Everything here needs Microsoft Defender for Endpoint Plan 1 (included in Microsoft 365 Business Premium)."
+    ]
+  },
+  "policies": {
+    "DefenderForEndpointSettings": {
+      "requiredSettings": [
+        { "label": "Connector", "value": "Intune ↔ Microsoft Defender for Endpoint connection = Enabled (established once the MDE service connection is set up)" },
+        { "label": "Connect Windows devices to Defender for Endpoint", "value": "On (for compliance + config enforcement)" }
+      ],
+      "steps": [
+        "Intune admin center > Endpoint security > Microsoft Defender for Endpoint.",
+        "Open the Microsoft Defender for Endpoint admin center link if the connection status isn't 'Enabled', complete the connection, then return — the onboarding/offboarding blobs flow into Intune automatically once connected.",
+        "Turn on the connection settings (allow MDE to enforce endpoint security configuration; connect Windows devices).",
+        "Note: LOW impact / admin-only — this is the bridge every other policy in this phase depends on. Set it first."
+      ],
+      "docs": "https://learn.microsoft.com/intune/protect/advanced-threat-protection-configure"
+    },
+    "Win - Security - D - MDE Onboarding": {
+      "requiredSettings": [
+        { "label": "Policy type", "value": "Endpoint security > Endpoint detection and response (EDR) > profile: Endpoint detection and response" },
+        { "label": "Defender for Endpoint client configuration package type", "value": "Auto from connector (recommended)" },
+        { "label": "Sample sharing", "value": "All (enables richer threat analysis)" }
+      ],
+      "steps": [
+        "Intune admin center > Endpoint security > Endpoint detection and response > Create Policy > Windows > profile Endpoint detection and response.",
+        "Set 'client configuration package type' = Auto from connector; Sample sharing = All.",
+        "Assign to the Windows device group and create. Devices begin onboarding to MDE in the background.",
+        "Note: LOW impact / invisible to users — installs the MDE sensor. Depends on the connector above being Enabled."
+      ],
+      "docs": "https://learn.microsoft.com/intune/protect/endpoint-security-edr-policy"
+    },
+    "Win - Security - D - Defender Antivirus": {
+      "requiredSettings": [
+        { "label": "Policy type", "value": "Endpoint security > Antivirus > profile: Microsoft Defender Antivirus" },
+        { "label": "Real-time / behavior monitoring", "value": "Allowed" },
+        { "label": "Cloud-delivered protection", "value": "Allowed (with sample submission = Send safe samples automatically)" },
+        { "label": "Scan scope", "value": "Scan network/mapped drives and removable drives during full scan = Yes; real-time scan direction = monitor all files" },
+        { "label": "PUA protection", "value": "On (block potentially unwanted apps); remediation = Quarantine for all severities" }
+      ],
+      "steps": [
+        "Intune admin center > Endpoint security > Antivirus > Create Policy > Windows > profile Microsoft Defender Antivirus.",
+        "Enable real-time + behavior monitoring, cloud-delivered protection, network/removable-drive scanning, PUA protection, and set remediation actions to Quarantine.",
+        "Assign to the Windows device group.",
+        "Note: LOW impact — users may notice slightly longer scheduled scans; no day-to-day interaction."
+      ],
+      "docs": "https://learn.microsoft.com/intune/protect/endpoint-security-antivirus-policy"
+    },
+    "Win - Security - D - Attack Surface Reduction Rules": {
+      "requiredSettings": [
+        { "label": "Policy type", "value": "Endpoint security > Attack surface reduction > profile: Attack surface reduction rules" },
+        { "label": "Key rules", "value": "Block Office apps creating child processes; block Win32 API calls from Office macros; block credential stealing from lsass; block executable content from email/webmail; block obfuscated scripts; advanced ransomware protection — per the baseline" },
+        { "label": "Initial mode", "value": "Audit first, then Block after review" }
+      ],
+      "steps": [
+        "Intune admin center > Endpoint security > Attack surface reduction > Create Policy > Windows > profile Attack surface reduction rules.",
+        "Set the baseline ASR rules to Audit mode initially; assign to a pilot group.",
+        "Review the Defender ASR report for legitimate apps that would be blocked, add exclusions as needed, then switch the rules to Block and broaden assignment.",
+        "Note (MEDIUM impact): heavy macro users / executable-attachment workflows may hit blocks — audit-first is strongly recommended before enforcing."
+      ],
+      "docs": "https://learn.microsoft.com/intune/protect/endpoint-security-asr-policy"
+    },
+    "Win - Security - D - Exploit Protection": {
+      "requiredSettings": [
+        { "label": "Policy type", "value": "Endpoint security > Attack surface reduction > profile: Exploit Protection" },
+        { "label": "Exploit Protection Settings", "value": "Configured — supplied via an exploit protection XML mitigation file (DEP, ASLR, CFG, etc.)" }
+      ],
+      "steps": [
+        "Prepare the exploit-protection XML (export from a reference device via Windows Security > App & browser control, or use the Inforcer baseline XML).",
+        "Intune admin center > Endpoint security > Attack surface reduction > Create Policy > Windows > profile Exploit Protection.",
+        "Set 'Exploit Protection Settings' = Configured and upload the XML; assign to the Windows device group.",
+        "Note: LOW impact — system-level exploit mitigations; rarely a legitimate app misbehaves, worth watching during rollout."
+      ],
+      "docs": "https://learn.microsoft.com/defender-endpoint/enable-exploit-protection"
+    },
+    "Win - Security - D - Audit Device Control": {
+      "requiredSettings": [
+        { "label": "Policy type", "value": "Endpoint security > Attack surface reduction > profile: Device Control" },
+        { "label": "Mode", "value": "Audit only — monitors/logs USB & removable-media activity, does NOT block" }
+      ],
+      "steps": [
+        "Intune admin center > Endpoint security > Attack surface reduction > Create Policy > Windows > profile Device Control.",
+        "Configure the removable-storage / USB rules in Audit (report-only) mode; assign to the Windows device group.",
+        "Review the resulting device-control events in the Defender portal.",
+        "Note: LOW impact as audit-only (USB keeps working). If ever switched to Block/enforce, impact jumps to HIGH — users would lose USB/removable-media access, so treat that as a separate, communicated change."
+      ],
+      "docs": "https://learn.microsoft.com/defender-endpoint/device-control-overview"
+    }
+  }
+}
