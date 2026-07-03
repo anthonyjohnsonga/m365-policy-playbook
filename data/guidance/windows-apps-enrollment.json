@@ -1,0 +1,93 @@
+{
+  "meta": {
+    "tier": "Tier1",
+    "section": "Endpoint Management — Windows (Phase 7 of 7: Apps + enrollment / provisioning)",
+    "source": "Microsoft Learn (learn.microsoft.com/intune + autopilot + windows/configuration) — portal paths, Autopilot/ESP settings, Store policies grounded via the Microsoft Learn MCP on 2026-07-03.",
+    "generalNotes": [
+      "This phase mixes three things: Settings Catalog config profiles (Store control, remove built-in apps), an app deployment (Company Portal, under Apps), and two Windows Enrollment profiles (Autopilot deployment profile + Enrollment Status Page).",
+      "The provisioning trio works together for new/reset devices: the Autopilot profile shapes the OOBE, the ESP blocks the desktop until setup completes, and Company Portal + your config/security profiles install during that window. Set them up together and test with one pilot device before onboarding staff.",
+      "Existing, already-configured devices are unaffected by the Autopilot/ESP profiles — those only shape the out-of-box experience."
+    ]
+  },
+  "policies": {
+    "Win - Apps - U - Microsoft Store": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog — Windows Components > Store (user scope)" },
+        { "label": "Intent", "value": "Limit consumer Store installs while keeping IT-approved/private-store apps available per baseline" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Add the user-scoped Store settings (restrict private store / limit consumer installs) per the baseline; assign to the Windows device group.",
+        "Note: LOW impact — IT-approved apps stay available; personal Store installs are limited. Pairs with the device-scoped Store profile below."
+      ],
+      "docs": "https://learn.microsoft.com/intune/app-management/deployment/add-microsoft-store"
+    },
+    "Win - Apps - D - Microsoft Store": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog — Windows Components > Store (device scope)" },
+        { "label": "Key setting", "value": "'Turn off the Store application' (per baseline) — NOTE: this still lets Intune deploy Store apps and lets winget work; UWP auto-updates continue unless you also disable them" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Add the device-scoped Store control ('Turn off the Store application' is preferred over 'private store only'); leave 'Turn off automatic download/install of updates' Not configured so built-in/UWP apps still auto-update.",
+        "Assign to the Windows device group.",
+        "Note: LOW impact — blocks end-user consumer Store access without breaking Intune app delivery or winget."
+      ],
+      "docs": "https://learn.microsoft.com/intune/app-management/deployment/add-microsoft-store"
+    },
+    "Win - Apps - D - Remove Built-In Apps": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog — Administrative Templates > Windows Components > App Package Deployment" },
+        { "label": "Remove default Microsoft Store packages from the system", "value": "Enabled; toggle each consumer app to remove (Xbox, Candy Crush, Clipchamp, etc.)" },
+        { "label": "Requirements", "value": "Windows 11 24H2+, Enterprise/Education edition; device-targeted (not user)" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Add 'Remove default Microsoft Store packages from the system' = Enabled and set each unwanted app's toggle to True; assign to a Windows DEVICE group.",
+        "Note (MEDIUM impact): removals happen at OOBE / new-profile provisioning / sign-in after the policy applies — for a seamless result apply during Autopilot with the ESP blocking. Removing an app also removes its local data, and you can't re-add it by un-toggling (requires reprovisioning) — so notify users and choose deliberately."
+      ],
+      "docs": "https://learn.microsoft.com/windows/configuration/policy-based-inbox-app-removal/policy-based-inbox-app-removal"
+    },
+    "Company Portal": {
+      "requiredSettings": [
+        { "label": "Where", "value": "Apps > Windows > Add > Microsoft Store app (new) — Company Portal" },
+        { "label": "Assignment", "value": "Required, install context = SYSTEM (machine-wide, silent)" }
+      ],
+      "steps": [
+        "Intune admin center > Apps > Windows > Add > app type 'Microsoft Store app (new)', search Company Portal, select it.",
+        "Assign as Required to the Windows device group with install behavior = System (machine-wide).",
+        "It installs silently via Windows Package Manager and appears in Start; on first launch users sign in with their work account.",
+        "Note: LOW impact — gives users a self-service surface for approved apps + compliance status; deploy it as part of provisioning."
+      ],
+      "docs": "https://learn.microsoft.com/intune/apps/store-apps-microsoft"
+    },
+    "Autopilot Profile for All Devices": {
+      "requiredSettings": [
+        { "label": "Where", "value": "Devices > Windows > Windows enrollment > Deployment Profiles > Create" },
+        { "label": "Deployment mode", "value": "User-driven; Join to Microsoft Entra ID as = Microsoft Entra joined" },
+        { "label": "OOBE", "value": "Hide EULA (Microsoft Software License Terms), Hide Privacy settings, Hide change account options, Automatically configure keyboard = Yes (skip keyboard page)" },
+        { "label": "User account type", "value": "Standard (per baseline — pairs with the Local Admins lockdown in Phase 3)" }
+      ],
+      "steps": [
+        "Devices > Windows > Windows enrollment > Deployment Profiles > Create profile > Windows PC.",
+        "OOBE: Deployment mode = User-driven; Entra joined; hide EULA + privacy + change-account options; skip keyboard; set User account type = Standard.",
+        "Assign to the Autopilot devices group (optionally 'Convert all targeted devices to Autopilot' = Yes).",
+        "Note (MEDIUM impact): shapes the out-of-box setup for new/reset devices into a streamlined, branded experience — no effect on existing configured devices."
+      ],
+      "docs": "https://learn.microsoft.com/autopilot/profiles"
+    },
+    "All Users and All Devices (Enrollment Status Page)": {
+      "requiredSettings": [
+        { "label": "Where", "value": "Devices > Windows > Windows enrollment > Enrollment Status Page (Default profile or a new one)" },
+        { "label": "Show app and profile installation progress", "value": "Yes" },
+        { "label": "Block device use until all apps and profiles are installed", "value": "Yes" }
+      ],
+      "steps": [
+        "Devices > Windows > Windows enrollment > Enrollment Status Page > open the Default profile (assigned to All users and all devices) or create one.",
+        "Set Show installation progress = Yes and Block device use until all apps and profiles are installed = Yes; tune error-handling (reset/allow-use on failure) per baseline.",
+        "Note (MEDIUM impact): during onboarding the new device is held on the ESP until setup finishes — first sign-in can take 15–45+ minutes depending on apps/policies. Prepare new users for the wait; existing devices are unaffected."
+      ],
+      "docs": "https://learn.microsoft.com/intune/enrollment/windows-enrollment-status"
+    }
+  }
+}
