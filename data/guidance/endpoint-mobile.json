@@ -1,0 +1,77 @@
+{
+  "meta": {
+    "tier": "Tier1",
+    "section": "Endpoint Management — Mobile (Intune)",
+    "source": "Microsoft Learn (learn.microsoft.com/intune) — portal paths, setting labels, defaults, and Data Protection Framework baseline values grounded via the Microsoft Learn MCP on 2026-07-03.",
+    "generalNotes": [
+      "App Protection Policies (MAM) protect org data INSIDE managed Microsoft apps (Outlook, Teams, OneDrive, Edge, Word/Excel/PowerPoint) and don't require the device to be enrolled — but they only apply when users use those managed apps. A consequence: company mail must be accessed via Outlook, not a generic iOS/Android mail client.",
+      "Requires Intune Plan 1 (included in Microsoft 365 Business Premium).",
+      "Create ONE policy per platform — a separate iOS/iPadOS policy and Android policy — under Apps > App protection policies > Create policy.",
+      "The values below follow Microsoft's Data Protection Framework baseline (enterprise level). Confirm each against the client's tier; the Inforcer master doesn't pin exact PIN length / grace values, so treat them as the recommended starting point and record any client-specific choice.",
+      "Roll out with user comms: the first time a user opens a managed app they'll be prompted to set an app PIN, and copy/paste out to personal apps will be limited."
+    ]
+  },
+  "policies": {
+    "iOS - Security - U - MAM (App Protection Policy)": {
+      "requiredSettings": [
+        { "label": "Platform", "value": "iOS/iPadOS · Apps = the Microsoft 365 apps you want protected (Outlook, Teams, OneDrive, Edge, Office apps)" },
+        { "label": "Data protection — Send org data to other apps", "value": "Policy managed apps (keeps org data within Intune-managed apps)" },
+        { "label": "Data protection — Save copies of org data", "value": "Block (allow only OneDrive for Business, SharePoint, Photo Library)" },
+        { "label": "Data protection — Restrict cut, copy, and paste between apps", "value": "Policy managed apps with paste in (blocks copy of org data out to personal apps)" },
+        { "label": "Data protection — Screen capture", "value": "Block" },
+        { "label": "Data protection — Encrypt org data", "value": "Require" },
+        { "label": "Access requirements — PIN for access", "value": "Require (numeric; min length per baseline, commonly 6)" },
+        { "label": "Access requirements — Recheck access requirements after", "value": "30 minutes" },
+        { "label": "Conditional launch", "value": "Offline grace period → Wipe data (e.g. 90 days); Jailbroken/rooted devices → Block access; Min OS version → Block access" }
+      ],
+      "steps": [
+        "In the Intune admin center → Apps → App protection policies → Create policy → iOS/iPadOS.",
+        "Basics: name it (e.g. 'iOS - MAM - App Protection'). Apps: target Public apps / the Microsoft 365 apps to protect.",
+        "Data protection tab: set Send org data to other apps = Policy managed apps; Save copies of org data = Block (allow OneDrive/SharePoint/Photo Library); Restrict cut, copy, and paste = Policy managed apps with paste in; Screen capture = Block; Encrypt org data = Require.",
+        "Access requirements tab: PIN for access = Require; set PIN type/length per baseline; Recheck access requirements after = 30 minutes.",
+        "Conditional launch tab: set the offline grace period (wipe), block jailbroken/rooted devices, and a minimum OS version.",
+        "Assignments: target the user group(s). Review + create.",
+        "Note: users will be prompted for an app PIN on first launch of a managed app and can't paste org data into personal apps — brief them first."
+      ],
+      "docs": "https://learn.microsoft.com/intune/app-management/protection/ref-settings-ios"
+    },
+    "Android - Security - U - MAM (App Protection Policy)": {
+      "requiredSettings": [
+        { "label": "Platform", "value": "Android · Apps = the Microsoft 365 apps you want protected (Outlook, Teams, OneDrive, Edge, Office apps)" },
+        { "label": "Data protection — Send org data to other apps", "value": "Policy managed apps (keeps org data within Intune-managed apps)" },
+        { "label": "Data protection — Save copies of org data", "value": "Block (allow only OneDrive for Business, SharePoint, Photo Library)" },
+        { "label": "Data protection — Restrict cut, copy, and paste between apps", "value": "Policy managed apps with paste in (blocks copy of org data out to personal apps)" },
+        { "label": "Data protection — Screen capture and Google Assistant", "value": "Block" },
+        { "label": "Data protection — Encrypt org data", "value": "Require" },
+        { "label": "Access requirements — PIN for access", "value": "Require (numeric; min length per baseline, commonly 6)" },
+        { "label": "Access requirements — Recheck access requirements after", "value": "30 minutes" },
+        { "label": "Conditional launch", "value": "Offline grace period → Wipe data (e.g. 90 days); Rooted devices → Block access; Min OS version → Block access; SafetyNet/Play Integrity device attestation as required" }
+      ],
+      "steps": [
+        "In the Intune admin center → Apps → App protection policies → Create policy → Android.",
+        "Basics: name it (e.g. 'Android - MAM - App Protection'). Apps: target Public apps / the Microsoft 365 apps to protect.",
+        "Data protection tab: Send org data to other apps = Policy managed apps; Save copies of org data = Block (allow OneDrive/SharePoint/Photo Library); Restrict cut, copy, and paste = Policy managed apps with paste in; Screen capture and Google Assistant = Block; Encrypt org data = Require.",
+        "Access requirements tab: PIN for access = Require; set PIN type/length per baseline; Recheck access requirements after = 30 minutes.",
+        "Conditional launch tab: set the offline grace period (wipe), block rooted devices, a minimum OS version, and Play Integrity/SafetyNet attestation if used.",
+        "Assignments: target the user group(s). Review + create.",
+        "Note: company mail must be used through Outlook (not a generic Android mail client), and users get an app PIN + copy/paste limits — communicate ahead of rollout."
+      ],
+      "docs": "https://learn.microsoft.com/intune/app-management/protection/ref-settings-android"
+    },
+    "Device Compliance Settings (Intune)": {
+      "requiredSettings": [
+        { "label": "Mark devices with no compliance policy assigned as", "value": "Not compliant (default is Compliant — set to Not compliant so only confirmed-compliant devices pass Conditional Access)" },
+        { "label": "Compliance status validity period (days)", "value": "30 (default; configurable 1–120). A device that doesn't report in this window is treated as noncompliant." },
+        { "label": "Where the per-device grace period lives", "value": "NOT here — it's the 'Mark device noncompliant' action inside each compliance policy (default 0 days = immediate). Set a grace period there if you want a remediation window." }
+      ],
+      "steps": [
+        "In the Intune admin center → Devices → Compliance → Compliance policy settings (also reachable via Endpoint security → Device compliance → Compliance policy settings).",
+        "Set 'Mark devices with no compliance policy assigned as' = Not compliant.",
+        "Confirm 'Compliance status validity period (days)' = 30 (or the client's chosen value, 1–120).",
+        "Save.",
+        "Note: switching the no-policy default to Not compliant only bites devices that have NO compliance policy — make sure your compliance policies are assigned first, or unmanaged/newly-enrolled devices can lose access. Per-device remediation windows are set on each compliance policy's Mark device noncompliant action, not here."
+      ],
+      "docs": "https://learn.microsoft.com/intune/device-security/compliance/overview#compliance-policy-settings"
+    }
+  }
+}
