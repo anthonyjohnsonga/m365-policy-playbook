@@ -1,0 +1,125 @@
+{
+  "meta": {
+    "tier": "Tier1",
+    "section": "Collaboration — SharePoint & OneDrive",
+    "source": "Microsoft Learn (learn.microsoft.com/sharepoint + PowerShell module refs) — admin-center paths, setting labels, and cmdlets grounded via the Microsoft Learn MCP on 2026-07-03.",
+    "generalNotes": [
+      "Almost all of these are tenant-wide settings in the SharePoint admin center (admin.microsoft.com/sharepoint). Most map to a single Set-SPOTenant property; a couple use their own cmdlet (idle sign-out) and are noted inline.",
+      "In the sharing UI, the label 'New and existing guests' corresponds to the PowerShell value ExternalUserSharingOnly, and 'Anyone' = ExternalUserAndGuestSharing. OneDrive's sharing level can be equal to or more restrictive than SharePoint's, never more permissive.",
+      "Several rows are verify-only — they document the current/baseline state (e.g. unmanaged sync not restricted, no sync file exclusions, Mac sync enabled) rather than a change to push. Confirm the value and record drift.",
+      "You need the SharePoint Administrator role (or Global Admin). PowerShell examples use the SharePoint Online Management Shell (Set-SPOTenant / Set-SPOBrowserIdleSignOut)."
+    ]
+  },
+  "policies": {
+    "SharePointOneDriveSharingLevel": {
+      "requiredSettings": [
+        { "label": "External sharing — SharePoint", "value": "New and existing guests (PowerShell: SharingCapability = ExternalUserSharingOnly) — authenticated external users only; anonymous 'Anyone' links disabled" },
+        { "label": "External sharing — OneDrive", "value": "New and existing guests (equal to or more restrictive than SharePoint)" }
+      ],
+      "steps": [
+        "SharePoint admin center → Policies → Sharing.",
+        "Set the SharePoint external sharing slider to 'New and existing guests', and the OneDrive slider to 'New and existing guests' (or tighter).",
+        "Save. PowerShell equivalent: Set-SPOTenant -SharingCapability ExternalUserSharingOnly.",
+        "Note (HIGH impact, paired with the reshare policy below): this removes the 'Anyone with the link' option from the share dialog. Existing anonymous links keep working until they expire; no new ones can be created. If the client relies on anonymous links (proposals, media to clients), communicate before rollout."
+      ],
+      "docs": "https://learn.microsoft.com/sharepoint/turn-external-sharing-on-or-off"
+    },
+    "SharePointAllowGuestItemSharing / ExternalUserReshare": {
+      "requiredSettings": [
+        { "label": "Allow guests to share items they don't own", "value": "Off (PowerShell: PreventExternalUsersFromResharing = $true)" },
+        { "label": "Paired with", "value": "SharePointOneDriveSharingLevel = ExternalUserSharingOnly (anonymous 'Anyone' sharing disabled)" }
+      ],
+      "steps": [
+        "SharePoint admin center → Policies → Sharing → expand 'More external sharing settings'.",
+        "Uncheck 'Allow guests to share items they don't own'.",
+        "Save. PowerShell equivalent: Set-SPOTenant -PreventExternalUsersFromResharing $true.",
+        "Note (HIGH impact): external guests who received a shared link can no longer reshare it onward. Combined with the sharing-level policy, external sharing is limited to named, authenticated guests."
+      ],
+      "docs": "https://learn.microsoft.com/sharepoint/turn-external-sharing-on-or-off#more-external-sharing-settings"
+    },
+    "ActivityBasedTimeout": {
+      "requiredSettings": [
+        { "label": "Sign out inactive users automatically", "value": "On" },
+        { "label": "Sign out users after", "value": "60 minutes of browser inactivity" },
+        { "label": "Give notice before signing out", "value": "5 minutes (warning at 55 min)" },
+        { "label": "Requirement", "value": "Relies on Conditional Access — needs Microsoft Entra ID P1/P2 (included with Business Premium)" }
+      ],
+      "steps": [
+        "SharePoint admin center → Policies → Access control → Idle session sign-out.",
+        "Turn on 'Sign out inactive users automatically'; set sign-out = 60 minutes and warning = 5 minutes.",
+        "Save. PowerShell equivalent: Set-SPOBrowserIdleSignOut -Enabled:$true -WarnAfter (New-TimeSpan -Minutes 55) -SignOutAfter (New-TimeSpan -Minutes 60).",
+        "Note (MEDIUM impact): applies org-wide to SharePoint/OneDrive in the browser only (not desktop apps) and can't be scoped to specific users — use Conditional Access sign-in frequency if you need targeting. Browser users who step away >1h are signed out and may lose unsaved in-browser edits."
+      ],
+      "docs": "https://learn.microsoft.com/sharepoint/sign-out-inactive-users"
+    },
+    "OneDriveRetention / SharePointDeletedUserDefaultRetention": {
+      "requiredSettings": [
+        { "label": "Days to retain a deleted user's OneDrive", "value": "60 (default 30; range 30–3650). PowerShell: OrphanedPersonalSitesRetentionPeriod = 60" }
+      ],
+      "steps": [
+        "SharePoint admin center → Settings → OneDrive - Retention (the 'Retention' setting).",
+        "Set 'Days to retain files in a deleted user's OneDrive' = 60.",
+        "Save. PowerShell equivalent: Set-SPOTenant -OrphanedPersonalSitesRetentionPeriod 60.",
+        "Note: invisible to active users; matters at offboarding — the clock starts when the account is deleted from Entra ID. (Unlicensed OneDrive is separately auto-archived at 93 days.)"
+      ],
+      "docs": "https://learn.microsoft.com/sharepoint/set-retention"
+    },
+    "OneDriveStorageQuota": {
+      "requiredSettings": [
+        { "label": "Default OneDrive storage limit", "value": "1 TB = 1048576 MB. PowerShell: OneDriveStorageQuota = 1048576" }
+      ],
+      "steps": [
+        "SharePoint admin center → Settings → OneDrive - Storage limit.",
+        "Set the default storage to 1024 GB (1 TB) for all licensed users.",
+        "Save. PowerShell equivalent: Set-SPOTenant -OneDriveStorageQuota 1048576 (to re-apply to an existing user: Set-SPOSite -Identity <OneDrive URL> -StorageQuotaReset).",
+        "Note: standard allocation — no user impact unless a user was previously on a lower limit. A value above a user's license cap is rounded down to that cap."
+      ],
+      "docs": "https://learn.microsoft.com/sharepoint/set-default-storage-space"
+    },
+    "SharePointSiteCreation": {
+      "requiredSettings": [
+        { "label": "Site creation", "value": "Users can still create sites (site creation enabled)" },
+        { "label": "Default storage limit per site", "value": "1 TB per site (default)" }
+      ],
+      "steps": [
+        "SharePoint admin center → Settings → Site creation.",
+        "Confirm site creation is enabled and review the default site storage limit / managed path.",
+        "This is a verify-only baseline item — no restrictive change; most users won't notice. (Tenant setting IsSiteCreationEnabled / SiteCreationDefaultStorageLimitInMb.)"
+      ],
+      "docs": "https://learn.microsoft.com/sharepoint/manage-site-creation"
+    },
+    "UnmanagedOneDriveSyncRestriction": {
+      "requiredSettings": [
+        { "label": "Restrict OneDrive sync on unmanaged (non-domain-joined) devices", "value": "NOT restricted in this baseline — sync is allowed from any device (IsUnmanagedSyncAppForTenantRestricted = false)" }
+      ],
+      "steps": [
+        "SharePoint admin center → Settings → OneDrive - Sync (the 'Allow syncing only on computers joined to specific domains' option).",
+        "Verify the domain restriction is OFF — this baseline intentionally does not restrict sync by device.",
+        "Verify-only: confirm the current state and record it. If the client later wants to restrict, this is where you'd enable the allowed-domains list."
+      ],
+      "docs": "https://learn.microsoft.com/sharepoint/allow-syncing-only-on-specific-domains"
+    },
+    "SyncFileExclusions": {
+      "requiredSettings": [
+        { "label": "Block upload of specific file types (OneDrive sync)", "value": "None excluded in this baseline (ExcludedFileExtensionsForSyncClient is empty)" }
+      ],
+      "steps": [
+        "SharePoint admin center → Settings → OneDrive - Sync → 'Block upload of specific file types'.",
+        "Verify no file extensions are listed — all file types sync normally.",
+        "Verify-only: confirm and record. To exclude types later: Set-SPOTenant -ExcludedFileExtensionsForSyncClient 'ext1','ext2'."
+      ],
+      "docs": "https://learn.microsoft.com/sharepoint/block-file-types-syncing"
+    },
+    "MacOneDriveSync": {
+      "requiredSettings": [
+        { "label": "OneDrive sync client for Mac", "value": "Enabled (IsMacSyncAppEnabled = true) — Mac users can sync normally" }
+      ],
+      "steps": [
+        "SharePoint admin center → Settings → OneDrive - Sync.",
+        "Confirm the OneDrive sync app is allowed for Mac devices.",
+        "Verify-only: no restrictive impact; this documents that Mac sync is enabled in the baseline."
+      ],
+      "docs": "https://learn.microsoft.com/sharepoint/onedrive-overview"
+    }
+  }
+}
