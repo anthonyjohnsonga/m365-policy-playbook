@@ -1,0 +1,148 @@
+{
+  "meta": {
+    "tier": "EmailSecurity",
+    "section": "Defender for Office 365 — Core Email Security Policies",
+    "source": "Microsoft Learn (learn.microsoft.com/defender-office-365) — portal paths and step wording grounded via the Microsoft Learn MCP on 2026-07-02. This is a VERIFICATION playbook: the settings below are the documented Inforcer baseline values; use the steps to confirm each in the tenant and record any drift.",
+    "generalNotes": [
+      "All seven policies are custom (not preset-derived). Confirm each is the intended custom object and that its paired *Rule scopes the correct recipients (Get-SafeLinksRule, Get-SafeAttachmentRule, Get-MalwareFilterRule, Get-HostedContentFilterRule, Get-HostedOutboundSpamFilterRule, Get-AntiPhishRule).",
+      "Known deviation to raise with the client as ONE conversation: Safe Attachments, Anti-Malware, and the Inbound high-confidence-phish verdict all assign quarantine tag DefaultFullAccessPolicy where Microsoft recommends AdminOnlyAccessPolicy. Self-release of malware / high-confidence phish is hard-blocked regardless, but notification and visibility permissions differ.",
+      "Custom outbound/inbound/impersonation settings match Standard or Strict preset values in most places, so protection level is generally equivalent even though the policies are custom."
+    ]
+  },
+  "policies": {
+    "Inforcer - Safe Links Policy": {
+      "requiredSettings": [
+        { "label": "Safe Links protection", "value": "On — URLs rewritten and checked at time of click" },
+        { "label": "Apply to messages sent within the organization", "value": "On (EnableForInternalSenders: True)" },
+        { "label": "Apply real-time URL scanning", "value": "On (ScanUrls: True)" },
+        { "label": "Wait for URL scanning to complete before delivering", "value": "On (DeliverMessageAfterScan: True)" },
+        { "label": "Let users click through to the original URL", "value": "Off — click-through blocked (AllowClickThrough: False)" },
+        { "label": "Track user clicks", "value": "On (TrackClicks: True)" },
+        { "label": "Organization branding on notification pages", "value": "On (EnableOrgBranding: True)" }
+      ],
+      "steps": [
+        "In the Defender portal (security.microsoft.com), go to Email & collaboration > Policies & rules > Threat policies > Safe Links (or go directly to security.microsoft.com/safelinksv2).",
+        "Select the Inforcer Safe Links policy by clicking anywhere in its row to open the details flyout.",
+        "In the URL & click protection settings section, confirm Safe Links is On with URL rewriting enabled.",
+        "Confirm: Apply Safe Links to messages sent within the organization = On; Apply real-time URL scanning = On; Wait for URL scanning to complete before delivering = On.",
+        "Confirm 'Do not allow users to click through to the original URL' is selected (AllowClickThrough = False).",
+        "Verify recipient scoping on the paired rule with Get-SafeLinksRule, and record any drift in the Drift / Change Notes column."
+      ],
+      "docs": "https://learn.microsoft.com/defender-office-365/safe-links-policies-configure",
+      "portalUrl": "https://security.microsoft.com/safelinksv2"
+    },
+    "Inforcer - Outbound Spam Filter Policy": {
+      "requiredSettings": [
+        { "label": "Automatic forwarding rules", "value": "Off (AutoForwardingMode: Off)" },
+        { "label": "External recipient limit (per hour)", "value": "500" },
+        { "label": "Internal recipient limit (per hour)", "value": "1000" },
+        { "label": "Daily message limit", "value": "1000" },
+        { "label": "Action when a limit is reached", "value": "Restrict the user from sending mail (BlockUser)" },
+        { "label": "Bcc suspicious outbound mail", "value": "Configured True — but NON-FUNCTIONAL in a custom policy (see steps)" }
+      ],
+      "steps": [
+        "In the Defender portal, go to Email & collaboration > Policies & rules > Threat policies > Anti-spam (security.microsoft.com/antispam).",
+        "Select the Inforcer outbound policy (Type = Custom outbound spam policy).",
+        "In Protection settings, confirm the external per-hour limit (500), internal per-hour limit (1000), and daily limit (1000).",
+        "Confirm 'Restrict the user from sending mail' is the action when a limit is reached.",
+        "Confirm Automatic forwarding rules = Off.",
+        "NOTE: Microsoft's docs state the suspicious-outbound Bcc only works in the DEFAULT outbound policy, not custom ones. This policy is custom, so BccSuspiciousOutboundMail is set but does nothing — flag to the client if they believe it provides visibility. Verify scoping via Get-HostedOutboundSpamFilterRule."
+      ],
+      "docs": "https://learn.microsoft.com/defender-office-365/outbound-spam-policies-configure",
+      "portalUrl": "https://security.microsoft.com/antispam"
+    },
+    "Inforcer - Safe Attachments Policy": {
+      "requiredSettings": [
+        { "label": "Safe Attachments unknown malware response", "value": "Block (Enable: True, Action: Block)" },
+        { "label": "Redirect messages with detected attachments", "value": "Off (Redirect: False)" },
+        { "label": "Quarantine policy", "value": "DefaultFullAccessPolicy — DEVIATION (Microsoft default/recommended is AdminOnlyAccessPolicy)" },
+        { "label": "Organization branding", "value": "Off (EnableOrgBranding: False)" }
+      ],
+      "steps": [
+        "In the Defender portal, go to Email & collaboration > Policies & rules > Threat policies > Safe Attachments (security.microsoft.com/safeattachmentv2).",
+        "Select the Inforcer Safe Attachments policy to open the details flyout.",
+        "In the Settings section, confirm 'Safe Attachments unknown malware response' = Block and Redirect is off.",
+        "Check the Quarantine policy: the baseline uses DefaultFullAccessPolicy; Microsoft's recommended value is AdminOnlyAccessPolicy. Self-release of malware is hard-blocked either way, but notification/visibility differs — flag as a deviation (same conversation as the Anti-Malware policy).",
+        "Verify recipient scoping via Get-SafeAttachmentRule and record any drift."
+      ],
+      "docs": "https://learn.microsoft.com/defender-office-365/safe-attachments-policies-configure",
+      "portalUrl": "https://security.microsoft.com/safeattachmentv2"
+    },
+    "Inforcer - Anti-Malware Policy": {
+      "requiredSettings": [
+        { "label": "Common attachments filter", "value": "On (EnableFileFilter: True)" },
+        { "label": "When these file types are found", "value": "Reject the message with an NDR (FileTypeAction: Reject)" },
+        { "label": "File types", "value": "Microsoft default 52-extension list (confirmed exact match)" },
+        { "label": "Zero-hour auto purge (ZAP) for malware", "value": "On (ZapEnabled: True)" },
+        { "label": "Quarantine policy", "value": "DefaultFullAccessPolicy — DEVIATION (recommended: AdminOnlyAccessPolicy)" },
+        { "label": "Admin notifications", "value": "Internal senders: On; External senders: Off" }
+      ],
+      "steps": [
+        "In the Defender portal, go to Email & collaboration > Policies & rules > Threat policies > Anti-malware.",
+        "Select the Inforcer Anti-Malware policy to open the details flyout.",
+        "In Protection settings, confirm 'Enable the common attachments filter' = On and 'When these file types are found' = Reject the message with an NDR.",
+        "Optionally open 'Select file types' to confirm the 52-type default list is intact.",
+        "Confirm 'Enable zero-hour auto purge for malware' = On.",
+        "Confirm admin notification for internal senders is On (external Off).",
+        "Quarantine policy deviation: DefaultFullAccessPolicy vs recommended AdminOnlyAccessPolicy — same conversation as Safe Attachments. Verify scoping via Get-MalwareFilterRule."
+      ],
+      "docs": "https://learn.microsoft.com/defender-office-365/anti-malware-policies-configure"
+    },
+    "Inforcer - Anti-Phishing Policy": {
+      "requiredSettings": [
+        { "label": "Phishing email threshold", "value": "3 — Standard (PhishThresholdLevel: 3)" },
+        { "label": "If a message is detected as spoof", "value": "Move to Junk Email folder (AuthenticationFailAction: MoveToJmf)" },
+        { "label": "Mailbox intelligence protection action", "value": "Quarantine (Strict-level)" },
+        { "label": "User impersonation protection", "value": "Enabled — but protected senders list is EMPTY (critical gap, see steps)" },
+        { "label": "Domain impersonation protection", "value": "Off (EnableTargetedDomainsProtection: False)" }
+      ],
+      "steps": [
+        "In the Defender portal, go to Email & collaboration > Policies & rules > Threat policies > Anti-phishing (security.microsoft.com/antiphishing).",
+        "Select the Inforcer Anti-Phishing policy to open the details flyout.",
+        "On the Phishing threshold & protection section, confirm the threshold = 3 and that Mailbox intelligence and Spoof intelligence are on.",
+        "CRITICAL GAP: 'Enable users to protect' is on but has ZERO protected senders — open 'Manage senders for impersonation protection' and add the client's executives/finance/owners, or user-impersonation protection isn't protecting anyone.",
+        "Consider turning on domain impersonation protection for key partner/vendor domains (currently off) via 'Enable domains to protect'.",
+        "On the Actions section, confirm spoof action = Move to Junk Email and mailbox-intelligence action = Quarantine. Impersonation quarantine tags use DefaultFullAccessPolicy (vs the notification-enabled variant) — note for visibility. Verify scoping via Get-AntiPhishRule."
+      ],
+      "docs": "https://learn.microsoft.com/defender-office-365/anti-phishing-policies-mdo-configure",
+      "portalUrl": "https://security.microsoft.com/antiphishing"
+    },
+    "Inforcer - Inbound Spam Filter Policy": {
+      "requiredSettings": [
+        { "label": "Bulk email threshold (BCL)", "value": "6 — Standard (BulkThreshold: 6)" },
+        { "label": "High confidence phish — quarantine policy", "value": "DefaultFullAccessPolicy — STRONGEST DEVIATION (Microsoft recommends AdminOnlyAccessPolicy at every tier)" },
+        { "label": "Bulk / Spam — quarantine policy", "value": "Inforcer - LimitedAccess-RequestByUser (custom)" },
+        { "label": "Advanced Spam Filter (ASF) settings", "value": "All 13 Off (matches best practice; ASF is being deprecated)" }
+      ],
+      "steps": [
+        "In the Defender portal, go to Email & collaboration > Policies & rules > Threat policies > Anti-spam (security.microsoft.com/antispam).",
+        "Select the Inforcer inbound policy (Type = Custom anti-spam policy).",
+        "On the Bulk email threshold & spam properties section, confirm BCL threshold = 6 and that all ASF settings are Off.",
+        "On the Actions section, review each verdict (spam, high confidence spam, phishing, high confidence phishing, bulk) and its assigned quarantine policy.",
+        "PRIORITY FIX: High confidence phishing uses quarantine policy DefaultFullAccessPolicy — Microsoft recommends AdminOnlyAccessPolicy at every tier (Default/Standard/Strict all agree). Change this first.",
+        "Confirm Bulk and Spam verdicts use the custom 'Inforcer - LimitedAccess-RequestByUser' tag. Verify scoping via Get-HostedContentFilterRule."
+      ],
+      "docs": "https://learn.microsoft.com/defender-office-365/anti-spam-policies-configure",
+      "portalUrl": "https://security.microsoft.com/antispam"
+    },
+    "Inforcer - LimitedAccess-RequestByUser": {
+      "requiredSettings": [
+        { "label": "Recipient message access", "value": "Set specific access (Advanced)" },
+        { "label": "Release action preference", "value": "Allow recipients to request a message to be released (RequestRelease)" },
+        { "label": "Additional actions", "value": "Preview + Block sender only (bitmask 26 = BlockSender 16 + RequestRelease 8 + Preview 2)" },
+        { "label": "Not allowed", "value": "Self-release, Delete, Allow sender" },
+        { "label": "Quarantine notifications", "value": "On (ESNEnabled: True)" }
+      ],
+      "steps": [
+        "In the Defender portal, go to Email & collaboration > Policies & rules > Threat policies > Quarantine policy (in the Rules section; security.microsoft.com/quarantinePolicies).",
+        "Select the 'Inforcer - LimitedAccess-RequestByUser' custom policy.",
+        "On Recipient message access, confirm Set specific access (Advanced): release preference = 'Allow recipients to request a message to be released', and additional actions = Preview + Block sender only (no Delete, no Allow sender). This equals EndUserQuarantinePermissionsValue 26.",
+        "Confirm the Quarantine notification page has Enable selected (quarantine notifications on).",
+        "Confirm this tag is the one referenced by the Spoof action (Anti-Phishing) and the Bulk/Spam verdicts (Inbound Spam Filter).",
+        "Retention note: this object specifies 15 days, but the assigning anti-spam policy specifies 30 — per Microsoft docs the anti-spam policy's retention governs for spam-type quarantine, so 30 likely wins. Confirm if it matters to the client."
+      ],
+      "docs": "https://learn.microsoft.com/defender-office-365/quarantine-policies",
+      "portalUrl": "https://security.microsoft.com/quarantinePolicies"
+    }
+  }
+}
