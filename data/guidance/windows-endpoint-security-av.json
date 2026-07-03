@@ -22,7 +22,7 @@
         "Turn on the connection settings (allow MDE to enforce endpoint security configuration; connect Windows devices).",
         "Note: LOW impact / admin-only — this is the bridge every other policy in this phase depends on. Set it first."
       ],
-      "docs": "https://learn.microsoft.com/intune/protect/advanced-threat-protection-configure"
+      "docs": "https://learn.microsoft.com/intune/device-security/microsoft-defender/configure-integration"
     },
     "Win - Security - D - MDE Onboarding": {
       "requiredSettings": [
@@ -36,7 +36,7 @@
         "Assign to the Windows device group and create. Devices begin onboarding to MDE in the background.",
         "Note: LOW impact / invisible to users — installs the MDE sensor. Depends on the connector above being Enabled."
       ],
-      "docs": "https://learn.microsoft.com/intune/protect/endpoint-security-edr-policy"
+      "docs": "https://learn.microsoft.com/intune/device-configuration/endpoint-security/deploy-edr"
     },
     "Win - Security - D - Defender Antivirus": {
       "requiredSettings": [
@@ -52,7 +52,7 @@
         "Assign to the Windows device group.",
         "Note: LOW impact — users may notice slightly longer scheduled scans; no day-to-day interaction."
       ],
-      "docs": "https://learn.microsoft.com/intune/protect/endpoint-security-antivirus-policy"
+      "docs": "https://learn.microsoft.com/defender-endpoint/use-intune-config-manager-microsoft-defender-antivirus"
     },
     "Win - Security - D - Attack Surface Reduction Rules": {
       "requiredSettings": [
@@ -66,7 +66,7 @@
         "Review the Defender ASR report for legitimate apps that would be blocked, add exclusions as needed, then switch the rules to Block and broaden assignment.",
         "Note (MEDIUM impact): heavy macro users / executable-attachment workflows may hit blocks — audit-first is strongly recommended before enforcing."
       ],
-      "docs": "https://learn.microsoft.com/intune/protect/endpoint-security-asr-policy"
+      "docs": "https://learn.microsoft.com/intune/device-configuration/endpoint-security/attack-surface-reduction"
     },
     "Win - Security - D - Exploit Protection": {
       "requiredSettings": [

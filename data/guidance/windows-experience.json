@@ -71,7 +71,7 @@
         "Add the Edge security settings (SmartScreen, TLS 1.2 minimum, cookie/popup/notification controls, sync/password-save restrictions); assign to the Windows device group.",
         "Note: LOW impact — enterprise browser hardening; kept separate from the Edge experience profile above."
       ],
-      "docs": "https://learn.microsoft.com/deployedge/microsoft-edge-security-config-io"
+      "docs": "https://learn.microsoft.com/deployedge/configure-microsoft-edge"
     },
     "Win - Security - D - Google Chrome": {
       "requiredSettings": [

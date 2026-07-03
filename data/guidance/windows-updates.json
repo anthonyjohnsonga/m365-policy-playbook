@@ -120,7 +120,7 @@
         "Assign to the Windows device group.",
         "Note: LOW impact — keeps Defender AV definitions/engine fresh; complements the Defender Antivirus protection policy (Phase 2)."
       ],
-      "docs": "https://learn.microsoft.com/intune/protect/endpoint-security-antivirus-policy"
+      "docs": "https://learn.microsoft.com/defender-endpoint/use-intune-config-manager-microsoft-defender-antivirus"
     },
     "Win - Monitoring - D - WUFB Reports": {
       "requiredSettings": [

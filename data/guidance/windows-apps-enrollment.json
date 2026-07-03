@@ -59,7 +59,7 @@
         "It installs silently via Windows Package Manager and appears in Start; on first launch users sign in with their work account.",
         "Note: LOW impact — gives users a self-service surface for approved apps + compliance status; deploy it as part of provisioning."
       ],
-      "docs": "https://learn.microsoft.com/intune/apps/store-apps-microsoft"
+      "docs": "https://learn.microsoft.com/intune/app-management/deployment/add-microsoft-store"
     },
     "Autopilot Profile for All Devices": {
       "requiredSettings": [
@@ -87,7 +87,7 @@
         "Set Show installation progress = Yes and Block device use until all apps and profiles are installed = Yes; tune error-handling (reset/allow-use on failure) per baseline.",
         "Note (MEDIUM impact): during onboarding the new device is held on the ESP until setup finishes — first sign-in can take 15–45+ minutes depending on apps/policies. Prepare new users for the wait; existing devices are unaffected."
       ],
-      "docs": "https://learn.microsoft.com/intune/enrollment/windows-enrollment-status"
+      "docs": "https://learn.microsoft.com/intune/device-enrollment/windows/setup-status-page"
     }
   }
 }

@@ -22,7 +22,7 @@
         "Set Backup Directory = Microsoft Entra ID; set password length/complexity and the rotation age.",
         "Assign to a Windows DEVICE group (not user group). Note: LOW impact / invisible to users — recover/rotate passwords from Devices > (device) > Local admin password recovery."
       ],
-      "docs": "https://learn.microsoft.com/intune/protect/windows-laps-policy"
+      "docs": "https://learn.microsoft.com/intune/device-security/laps/deploy-policy"
     },
     "Win - Access Control - D - LAPS": {
       "requiredSettings": [
@@ -35,7 +35,7 @@
         "Set Administrator Account Name to the managed account (or leave blank for the built-in local admin), and configure automatic account management / post-authentication reset per the baseline.",
         "Assign to the Windows device group. Note: LOW impact / IT-workflow only — pairs with the LAPS row above; keep them in one coherent LAPS policy per device to avoid CSP conflicts."
       ],
-      "docs": "https://learn.microsoft.com/intune/protect/windows-laps-policy"
+      "docs": "https://learn.microsoft.com/intune/device-security/laps/deploy-policy"
     },
     "Win - Security - D - Local Admins": {
       "requiredSettings": [
@@ -49,7 +49,7 @@
         "Pilot first, then assign to the Windows device group.",
         "Note (HIGH impact): users who currently have local admin are stripped of it — they can no longer install software or change system settings freely. This is one of the most disruptive policies; communicate and provide a support path (LAPS / elevation process) before enforcing."
       ],
-      "docs": "https://learn.microsoft.com/intune/protect/endpoint-security-account-protection-policy"
+      "docs": "https://learn.microsoft.com/intune/device-configuration/endpoint-security/account-protection"
     },
     "Win - Network - D - Firewall": {
       "requiredSettings": [
@@ -62,7 +62,7 @@
         "Assign to the Windows device group.",
         "Note: LOW impact — invisible to most users; only environments with unusual local firewall rules might see connection differences."
       ],
-      "docs": "https://learn.microsoft.com/intune/protect/endpoint-security-firewall-policy"
+      "docs": "https://learn.microsoft.com/intune/device-configuration/endpoint-security/firewall"
     },
     "Win - Security - D - BitLocker": {
       "requiredSettings": [
@@ -78,7 +78,7 @@
         "Set Require Device Encryption = Enabled; Allow Warning For Other Disk Encryption = Disabled; Allow Standard User Encryption = Enabled; Require backup of recovery info to Microsoft Entra = Yes.",
         "Assign to the Windows device group. Note (MEDIUM impact): unencrypted devices silently begin BitLocker (one-time encryption pass, temporary perf hit); recovery keys escrow to Entra. Older hardware without a compatible TPM may fail to encrypt and show non-compliant — pairs with the Encryption compliance policy (Phase 1)."
       ],
-      "docs": "https://learn.microsoft.com/intune/protect/encrypt-devices"
+      "docs": "https://learn.microsoft.com/intune/device-configuration/endpoint-security/encrypt-bitlocker-windows"
     }
   }
 }
