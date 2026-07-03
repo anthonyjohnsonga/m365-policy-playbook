@@ -1,0 +1,334 @@
+{
+  "meta": {
+    "tier": "EmailSecurity",
+    "section": "Exchange — Mail Flow Hardening + Non-Email-Security Baseline Items",
+    "source": "Inforcer baseline export + Microsoft Learn. VERIFICATION playbook: settings are the documented baseline values; most are org-wide Exchange Online settings read with Get-OrganizationConfig (or Get-TransportConfig / Get-TransportRule). Several rows are PowerShell-only with no portal page — for those the steps are cmdlet-based and no Open-portal button appears.",
+    "generalNotes": [
+      "Most of these are single org-wide settings surfaced by Get-OrganizationConfig. To verify a value, connect to Exchange Online PowerShell and run: Get-OrganizationConfig | Select-Object <FieldName> — then compare to the baseline value and record any drift.",
+      "Many rows in the 'Non-Email-Security Baseline Items' category are UX/feature toggles with no security impact — they're documented for completeness. The security-relevant ones are flagged in their steps (Alert External Emails, Security & Anti-Spoofing / RejectDirectSend, Authentication & Session, Compliance & Auditing / Customer Lockbox, Microsoft Bookings, Delayed Delicensing, Archive & Retention).",
+      "Where the Inforcer review found a documentation gap or an unresolved export discrepancy, the setting is reported as configured only — verify directly against the tenant before relying on it in a client conversation."
+    ]
+  },
+  "policies": {
+    "ExternalInOutlook": {
+      "requiredSettings": [
+        { "label": "External sender tagging", "value": "Enabled: True" },
+        { "label": "Allow list", "value": "Not present in export — confirm it isn't unexpectedly excluding trusted partners" }
+      ],
+      "steps": [
+        "In the Microsoft 365 admin center (admin.microsoft.com), go to Settings > Org settings > Security & privacy > External sender tagging, and confirm it's turned on.",
+        "Or verify in Exchange Online PowerShell: Get-ExternalInOutlook (confirm Enabled = True and review AllowList).",
+        "This is the header-area 'External' tag; it complements the 'Inforcer - Alert External Emails' body banner — genuine defense-in-depth, not a duplicate. Record any drift."
+      ],
+      "docs": "https://learn.microsoft.com/exchange/mail-flow-best-practices/external-mail-flow/native-external-sender-callouts-on-email-in-outlook"
+    },
+    "Mail Flow Security Settings": {
+      "requiredSettings": [
+        { "label": "SMTP client authentication (legacy)", "value": "Disabled org-wide (SmtpClientAuthenticationDisabled: True)" },
+        { "label": "Legacy TLS clients", "value": "Not allowed (AllowLegacyTLSClients: False)" }
+      ],
+      "steps": [
+        "In the Exchange admin center (admin.exchange.microsoft.com), go to Settings > Mail flow and review the org-wide SMTP AUTH setting.",
+        "Verify in PowerShell: Get-TransportConfig | Select-Object SmtpClientAuthenticationDisabled — confirm True (legacy SMTP AUTH off org-wide).",
+        "SmtpClientAuthenticationDisabled = True is deliberate hardening (not the historical default). Confirm no Conditional Access exclusion reopens the same legacy-auth path. Any mailbox that still needs SMTP AUTH must be enabled per-mailbox as a documented exception."
+      ],
+      "docs": "https://learn.microsoft.com/exchange/clients-and-mobile-in-exchange-online/authenticated-client-smtp-submission"
+    },
+    "Inforcer - Alert External Emails": {
+      "requiredSettings": [
+        { "label": "From scope", "value": "NotInOrganization (external senders)" },
+        { "label": "Sent-to scope", "value": "InOrganization (internal recipients)" },
+        { "label": "Action", "value": "Prepend an HTML caution banner to the message body" },
+        { "label": "HTML disclaimer fallback action", "value": "Wrap — DEVIATION (Microsoft recommends Reject; see steps)" },
+        { "label": "Priority / Mode", "value": "Priority 2 / Enforce" }
+      ],
+      "steps": [
+        "In the Exchange admin center (admin.exchange.microsoft.com), go to Mail flow > Rules and open the 'Inforcer - Alert External Emails' rule.",
+        "Confirm the rule applies when the sender is outside and the recipient is inside the organization, and that it prepends the HTML disclaimer banner.",
+        "CRITICAL: the HTML disclaimer fallback action is 'Wrap'. Microsoft warns against Wrap on rules affecting external senders because it interferes with Safe Attachments scanning for the affected messages. Recommended fix: change the fallback action to Reject. Confirm with the client first — Reject bounces the message instead of delivering it wrapped (a real behavior change).",
+        "Confirm rule priority/ordering against the full rule set: Get-TransportRule | Format-Table Name,Priority,State."
+      ],
+      "docs": "https://learn.microsoft.com/exchange/security-and-compliance/mail-flow-rules/mail-flow-rules"
+    },
+    "MailTips": {
+      "requiredSettings": [
+        { "label": "All MailTips", "value": "Enabled (MailTipsAllTipsEnabled: True)" },
+        { "label": "External recipients tip", "value": "Enabled (MailTipsExternalRecipientsTipsEnabled: True — NOT the default)" },
+        { "label": "Large audience threshold", "value": "25 recipients (default)" }
+      ],
+      "steps": [
+        "In the Exchange admin center, go to Settings > Mail flow and review the MailTips panel.",
+        "Verify in PowerShell: Get-OrganizationConfig | Select-Object MailTipsAllTipsEnabled, MailTipsExternalRecipientsTipsEnabled, MailTipsLargeAudienceThreshold.",
+        "MailTipsExternalRecipientsTipsEnabled = True is deliberate hardening (defaults to False) — the compose-time complement to the external-email banner, warning senders before they send externally. Record any drift."
+      ],
+      "docs": "https://learn.microsoft.com/exchange/clients-and-mobile-in-exchange-online/mailtips/mailtips"
+    },
+    "Authentication & Session": {
+      "requiredSettings": [
+        { "label": "Modern authentication (OAuth2)", "value": "On (OAuth2ClientProfileEnabled: True) — confirm explicitly" },
+        { "label": "Idle session timeout (Outlook on the web)", "value": "On, 1 hour (ActivityBasedAuthenticationTimeoutEnabled: True)" },
+        { "label": "Preserve single sign-on", "value": "True" }
+      ],
+      "steps": [
+        "Confirm modern auth in the Microsoft 365 admin center: Settings > Org settings > Modern authentication (or Get-OrganizationConfig | Select-Object OAuth2ClientProfileEnabled).",
+        "CRITICAL: if OAuth2ClientProfileEnabled were False it would silently undermine the SMTP AUTH blocking above and weaken CA/MFA enforcement on mail clients — verify it's True.",
+        "Confirm the idle session timeout in Microsoft 365 admin center: Settings > Org settings > Security & privacy > Idle session timeout (protects unattended Outlook-on-the-web sessions on shared devices).",
+        "Note: EnforceExoAppRbacPermissions is a separate mechanism from EWS access control — don't conflate the two."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/admin/manage/idle-session-timeout-web-apps"
+    },
+    "Security & Anti-Spoofing": {
+      "requiredSettings": [
+        { "label": "Reject Direct Send", "value": "True — NOT the default (ships False; public preview feature)" },
+        { "label": "Mask client IP in received headers", "value": "True (MaskClientIpInReceivedHeadersEnabled)" },
+        { "label": "Unblock unsafe sender prompt", "value": "True" }
+      ],
+      "steps": [
+        "PowerShell only (no confirmed portal page). Verify: Get-OrganizationConfig | Select-Object RejectDirectSend, MaskClientIpInReceivedHeadersEnabled.",
+        "MOST SIGNIFICANT FINDING IN THE REVIEW: RejectDirectSend = True closes the unauthenticated Direct Send SMTP endpoint that attackers abuse to spoof internal senders without credentials (bypassing SPF/DKIM/DMARC). Default is off — this is deliberate hardening.",
+        "CAUTION: enabling this can break legitimate unauthenticated internal send from devices/apps (printers, scanners, line-of-business apps). Since it's already on, confirm the client's migration to authenticated SMTP / a connector was completed — watch for 550 5.7.68 rejection errors indicating something was missed."
+      ],
+      "docs": "https://learn.microsoft.com/exchange/mail-flow-best-practices/how-to-set-up-a-multifunction-device-or-application-to-send-email-using-microsoft-365-or-office-365"
+    },
+    "FindTime (Meeting Polls)": {
+      "requiredSettings": [
+        { "label": "Attendee authentication required", "value": "False" },
+        { "label": "Auto-schedule", "value": "On (FindTimeAutoScheduleDisabled: False)" },
+        { "label": "Lock poll for attendees", "value": "False" },
+        { "label": "Online meeting option", "value": "Enabled (FindTimeOnlineMeetingOptionDisabled: False)" }
+      ],
+      "steps": [
+        "PowerShell only (no confirmed portal page). Verify: Get-OrganizationConfig | Select-Object FindTime*.",
+        "Not email security — permissive default posture across all four settings, nothing hardened. Documented for completeness; record drift only."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/scheduler/findtime-admin-settings"
+    },
+    "Public Folders": {
+      "requiredSettings": [
+        { "label": "Deployment mode", "value": "Local (PublicFoldersEnabled: Local) — no on-prem hybrid dependency" },
+        { "label": "Remote public folder mailboxes", "value": "Empty" },
+        { "label": "Retention / quotas", "value": "Deleted 30d | Moved 7d | Warning 1.7GB | Prohibit post 2GB | MaxItemSize Unlimited" }
+      ],
+      "steps": [
+        "In the Exchange admin center, go to Public folders for the folder list; org-wide defaults are read via PowerShell.",
+        "Verify: Get-OrganizationConfig | Select-Object PublicFoldersEnabled, RemotePublicFolderMailboxes.",
+        "Local mode + no remote mailboxes confirms the tenant has no on-prem Exchange hybrid dependency for public folders (corroborates the Hybrid / Directory Sync row)."
+      ],
+      "docs": "https://learn.microsoft.com/exchange/collaboration-exo/public-folders/public-folders"
+    },
+    "Calendar & Meetings": {
+      "requiredSettings": [
+        { "label": "Shorten event scope (Speedy meetings)", "value": "None — staged but not applied org-wide (ShortenEventScopeDefault: None)" },
+        { "label": "Reduce short / long events by", "value": "5 min / 10 min" },
+        { "label": "Visible meeting update properties", "value": "Location, AllProperties:15" }
+      ],
+      "steps": [
+        "PowerShell only (no confirmed portal page). Verify: Get-OrganizationConfig | Select-Object ShortenEventScopeDefault, DefaultMinutesToReduceShortEventsBy, DefaultMinutesToReduceLongEventsBy.",
+        "Not email security. HybridRSVPEnabled and MatchSenderOrganizerProperties have no documented Microsoft Learn description — report as configured only, don't interpret."
+      ],
+      "docs": "https://learn.microsoft.com/powershell/module/exchangepowershell/set-organizationconfig"
+    },
+    "Distribution Groups & M365 Groups": {
+      "requiredSettings": [
+        { "label": "Default Microsoft 365 Group access type", "value": "Private (conservative; matches default)" },
+        { "label": "Distribution group naming policy", "value": "Empty (no convention enforced)" },
+        { "label": "Group members can edit content", "value": "False (default)" }
+      ],
+      "steps": [
+        "In the Microsoft 365 admin center, go to Settings > Org settings > Microsoft 365 Groups and review the defaults.",
+        "Verify in PowerShell: Get-OrganizationConfig | Select-Object DefaultGroupAccessType, DistributionGroupNamingPolicy.",
+        "DefaultGroupAccessType = Private is the one access-control-relevant setting here and it's correctly conservative. Several other fields in this row are name-based inference, not confirmed docs — verify directly if any matters to a client conversation."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/admin/create-groups/manage-groups"
+    },
+    "Mail Flow Message Recall Settings": {
+      "requiredSettings": [
+        { "label": "Message recall", "value": "Enabled (MessageRecallEnabled: True — effective default)" },
+        { "label": "Recall already-read messages", "value": "True — but see the export discrepancy note" },
+        { "label": "Max recallable age", "value": "365 days" }
+      ],
+      "steps": [
+        "In the Exchange admin center, go to Mail flow > Message recall to review the org setting.",
+        "Verify: Get-OrganizationConfig | Select-Object MessageRecallEnabled, RecallReadMessagesEnabled, MessageRecallMaxRecallableAge.",
+        "EXPORT DISCREPANCY: a second export of this same policy (row 'Message Recall (Organization Config export)') shows RecallReadMessagesEnabled as null instead of True, and there's no confirmed Microsoft default for that specific field — resolve with the live Get-OrganizationConfig check above. Recall does not work cross-org, so it's not a DLP control if asked."
+      ],
+      "docs": "https://learn.microsoft.com/exchange/message-recall-in-exchange-online"
+    },
+    "Mail Flow General Settings": {
+      "requiredSettings": [
+        { "label": "Plus addressing (tag+detail@domain)", "value": "Allowed, receive-only (DisablePlusAddressInRecipients: False)" },
+        { "label": "Send from alias", "value": "Off (SendFromAliasEnabled: False)" }
+      ],
+      "steps": [
+        "In the Exchange admin center, go to Settings > Mail flow (plus addressing checkbox).",
+        "Verify: Get-OrganizationConfig | Select-Object DisablePlusAddressInRecipients, SendFromAliasEnabled.",
+        "Plus addressing is receive-side only per Microsoft docs — it can't be used to send, so there's no spoofing / send-as risk despite being enabled. Not a security-relevant setting."
+      ],
+      "docs": "https://learn.microsoft.com/exchange/recipients-in-exchange-online/plus-addressing-in-exchange-online"
+    },
+    "Mail Flow Reply All Storm Protection Settings": {
+      "requiredSettings": [
+        { "label": "Reply-all storm protection", "value": "Enabled (matches platform default)" },
+        { "label": "Minimum recipients", "value": "2500" },
+        { "label": "Minimum replies", "value": "10" },
+        { "label": "Block duration", "value": "6 hours" }
+      ],
+      "steps": [
+        "In the Exchange admin center, the Reply-all storm protection report is under Reports > Mail flow (report view only); configuration is via PowerShell.",
+        "Verify: Get-TransportConfig | Select-Object ReplyAllStormProtectionEnabled, ReplyAllStormDetectionMinimumRecipients, ReplyAllStormDetectionMinimumReplies, ReplyAllStormBlockDurationHours.",
+        "These match Microsoft's current platform defaults exactly — inherited default behavior, not an Inforcer customization. Closest thing to an availability/resilience control in this set."
+      ],
+      "docs": "https://learn.microsoft.com/exchange/troubleshoot/email-delivery/reply-all-storm-protection"
+    },
+    "Microsoft Bookings": {
+      "requiredSettings": [
+        { "label": "Booking page requires sign-in", "value": "No (BookingsAuthEnabled: False)" },
+        { "label": "Staff details exposed on booking page", "value": "Yes (BookingsExposureOfStaffDetailsRestricted: False)" },
+        { "label": "Staff membership approval required", "value": "No (BookingsMembershipApprovalRequired: False)" },
+        { "label": "Search engine indexing", "value": "Disabled (BookingsSearchEngineIndexDisabled: True)" }
+      ],
+      "steps": [
+        "In the Microsoft 365 admin center, go to Settings > Org settings > Bookings and review the settings.",
+        "Verify: Get-OrganizationConfig | Select-Object Bookings* .",
+        "PRIVACY CALLOUT: with these values, staff names/availability are publicly visible to anyone with the booking link and staff were never required to opt in. Standard for a customer scheduling tool, but confirm staff are aware — setting BookingsMembershipApprovalRequired = True is a one-setting fix if not."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/bookings/turn-bookings-on-or-off"
+    },
+    "Admin Notifications": {
+      "requiredSettings": [
+        { "label": "Exchange notifications", "value": "Enabled (ExchangeNotificationEnabled: True)" },
+        { "label": "Notification recipients", "value": "Empty — goes to ALL admins by default (not a gap)" }
+      ],
+      "steps": [
+        "PowerShell only (no confirmed portal page). Verify: Get-OrganizationConfig | Select-Object ExchangeNotificationEnabled, ExchangeNotificationRecipients.",
+        "The empty recipients list is NOT a gap — per Microsoft docs, notifications go to all administrators when the field isn't set.",
+        "This is a legacy/narrow channel — distinct from Message Center, Service Health, and Defender alert policies. Don't treat it as the client's primary admin-alerting backbone."
+      ],
+      "docs": "https://learn.microsoft.com/powershell/module/exchangepowershell/set-organizationconfig"
+    },
+    "Compliance & Auditing": {
+      "requiredSettings": [
+        { "label": "Mailbox auditing", "value": "On (AuditDisabled: False)" },
+        { "label": "Customer Lockbox", "value": "Enabled (CustomerLockboxEnabled: True) — SEE SKU FLAG" },
+        { "label": "DLP wait on send", "value": "Off (default)" },
+        { "label": "ELC processing / Read tracking", "value": "ElcProcessingDisabled: False | ReadTrackingEnabled: False" }
+      ],
+      "steps": [
+        "Verify auditing in PowerShell: Get-OrganizationConfig | Select-Object AuditDisabled (False = auditing on; confirms the Phase 6 checklist item).",
+        "For Customer Lockbox, go to the Microsoft 365 admin center: Settings > Org settings > Security & privacy > Customer lockbox, or Get-OrganizationConfig | Select-Object CustomerLockboxEnabled.",
+        "SKU-ENTITLEMENT FLAG: Customer Lockbox requires Microsoft 365 / Office 365 E5 or an Advanced Compliance add-on — NOT included in Business Premium. The toggle exists regardless of license and doesn't warn about a missing entitlement, so it may be non-functional as configured. Confirm the client's licensing so they don't have a false sense of protection."
+      ],
+      "docs": "https://learn.microsoft.com/purview/customer-lockbox-requests"
+    },
+    "Mail Flow & Addressing": {
+      "requiredSettings": [
+        { "label": "7-bit charset byte encoder", "value": "0 (ByteEncoderTypeFor7BitCharsets)" },
+        { "label": "In-region routing (Multi-Geo)", "value": "False" },
+        { "label": "Recipient delimiters / Shared-domain flow", "value": "Configured — both undocumented in Microsoft's reference" }
+      ],
+      "steps": [
+        "PowerShell only (no confirmed portal page). Verify: Get-OrganizationConfig | Select-Object ByteEncoderTypeFor7BitCharsets, InRegionRoutingEnabled.",
+        "DUPLICATE FIELDS: DisablePlusAddressInRecipients and SendFromAliasEnabled appear here too but are the same fields already covered under 'Mail Flow General Settings' — an Inforcer baseline structure quirk, not a conflict.",
+        "RecipientDelimiters and SharedDomainEmailAddressFlowEnabled show blank descriptions in Microsoft's own reference — genuinely undocumented, report as configured only."
+      ],
+      "docs": "https://learn.microsoft.com/powershell/module/exchangepowershell/set-organizationconfig"
+    },
+    "Outlook Experience": {
+      "requiredSettings": [
+        { "label": "Two-click mail preview", "value": "False" },
+        { "label": "Public computers detection", "value": "False" },
+        { "label": "Actionable Messages external access token", "value": "False — legacy EAT auth, retired by Microsoft 2026-06-08 (likely a no-op)" },
+        { "label": "Other UX toggles", "value": "13 additional pure-UX preferences" }
+      ],
+      "steps": [
+        "In the Microsoft 365 admin center, go to Settings > Org settings > Outlook to review the org-wide Outlook preferences.",
+        "Verify individual fields in PowerShell: Get-OrganizationConfig | Select-Object TwoClickMailPreviewEnabled, PublicComputersDetectionEnabled, ActionableMessagesExtenalAccessTokenEnabled.",
+        "Mostly pure UX. TwoClickMailPreviewEnabled and PublicComputersDetectionEnabled are plausibly security-adjacent but have no confirmed Microsoft Learn description — treat as informational. The Actionable Messages EAT field is likely a no-op now (see 'Connectors & Actionable Messages')."
+      ],
+      "docs": "https://learn.microsoft.com/powershell/module/exchangepowershell/set-organizationconfig"
+    },
+    "Mobile & Workspace": {
+      "requiredSettings": [
+        { "label": "Outlook Mobile GCC restrictions", "value": "False (moot — commercial tenant, not GCC)" },
+        { "label": "Outlook Pay", "value": "False" },
+        { "label": "Workspace / Places tenant", "value": "True (WorkspaceTenantEnabled)" }
+      ],
+      "steps": [
+        "PowerShell only (no confirmed portal page). Verify: Get-OrganizationConfig | Select-Object OutlookMobileGCCRestrictionsEnabled, OutlookPayEnabled, WorkspaceTenantEnabled.",
+        "No security relevance. The GCC restriction is moot on a commercial tenant; WorkspaceTenantEnabled likely maps to Microsoft Places (desk booking) but that mapping isn't fully confirmed."
+      ],
+      "docs": "https://learn.microsoft.com/powershell/module/exchangepowershell/set-organizationconfig"
+    },
+    "Hybrid / Directory Sync": {
+      "requiredSettings": [
+        { "label": "Autodiscover partial directory sync", "value": "False (AutodiscoverPartialDirSync)" }
+      ],
+      "steps": [
+        "PowerShell only (no confirmed portal page). Verify: Get-OrganizationConfig | Select-Object AutodiscoverPartialDirSync.",
+        "False confirms the tenant is fully cloud-only, not mid-hybrid-migration — corroborates the Public Folders row (Local mode, no remote mailboxes)."
+      ],
+      "docs": "https://learn.microsoft.com/powershell/module/exchangepowershell/set-organizationconfig"
+    },
+    "Connectors & Actionable Messages": {
+      "requiredSettings": [
+        { "label": "Outlook Connectors", "value": "Off across all 4 surfaces (ConnectorsEnabled: False)" },
+        { "label": "Actionable Messages (Outlook cards)", "value": "Enabled (ConnectorsActionableMessagesEnabled / SmtpActionableMessagesEnabled: True)" }
+      ],
+      "steps": [
+        "No single unified portal page — Connectors are managed per surface (Outlook > Manage add-ins; Teams admin center for Teams connectors).",
+        "Verify: Get-OrganizationConfig | Select-Object ConnectorsEnabled, ConnectorsActionableMessagesEnabled, SmtpActionableMessagesEnabled.",
+        "Actionable Messages security is sound: providers must register with Microsoft and pass DKIM/SPF or signed-card verification before cards render interactive — 'enabled' doesn't mean any email can carry a working button. Legacy EAT token auth was fully retired 2026-06-08. Connectors being off may be deliberate hardening or Microsoft's platform-wide Connectors retirement — can't distinguish from the export alone."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/admin/manage/manage-deployment-of-add-ins"
+    },
+    "Delayed Delicensing": {
+      "requiredSettings": [
+        { "label": "Delicensing resiliency", "value": "Disabled (DelayedDelicensingEnabled: False)" },
+        { "label": "Admin / end-user notifications", "value": "False (auto-set to False while the feature is off)" }
+      ],
+      "steps": [
+        "Enable/disable is PowerShell-only; the 'License removed recently' view is in the Microsoft 365 admin center under Active users.",
+        "Verify: Get-OrganizationConfig | Select-Object DelayedDelicensingEnabled.",
+        "Microsoft built this to delay mailbox-access removal by up to 30 days after a license is removed, so admins can catch accidental bulk delicensing before data loss. Worth a direct question: has this book of business had a bulk-delicensing incident, or is change management rigorous enough that it isn't needed? It costs nothing to enable if there's real risk."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/enterprise/delicensing-resiliency"
+    },
+    "EWS & REST API Access": {
+      "requiredSettings": [
+        { "label": "EWS application access policy", "value": "EnforceBlockList" },
+        { "label": "EWS block list", "value": "MacOutlook/* (all versions), Microsoft Office/15.* (Office 2013)" }
+      ],
+      "steps": [
+        "PowerShell only (no confirmed portal page). Verify: Get-OrganizationConfig | Select-Object EwsApplicationAccessPolicy, EwsBlockList.",
+        "IMPORTANT CONTEXT: Microsoft states application-level EWS blocking is NOT a security feature — user-agent strings are trivially spoofed; credential auth remains the real boundary.",
+        "MacOutlook/* blocks ALL Mac Outlook versions with no version qualifier — possibly a stale mitigation from a 2015 CVE (patched long ago). Confirm with the client whether it's intentional and whether Mac users have silent functionality gaps."
+      ],
+      "docs": "https://learn.microsoft.com/exchange/client-developer/exchange-web-services/how-to-control-access-to-ews-in-exchange"
+    },
+    "Archive & Retention": {
+      "requiredSettings": [
+        { "label": "Auto-archiving threshold", "value": "96% (matches Microsoft's published default)" },
+        { "label": "Auto-enable archive mailbox", "value": "False (AutoEnableArchiveMailbox)" }
+      ],
+      "steps": [
+        "Per-user archive enablement is in the Exchange admin center: Recipients > Mailboxes > (user) > Others > Manage mailbox archive. Org thresholds are read via PowerShell.",
+        "Verify: Get-OrganizationConfig | Select-Object AutoExpandingArchiveEnabled; and the archiving threshold / AutoEnableArchiveMailbox settings.",
+        "INTERACTION FINDING: auto-archiving can't provision an archive mailbox itself — one must already exist. With AutoEnableArchiveMailbox = False, the 96% safety net is only live for users who already have an archive enabled; others risk send/receive failures once full. Run Get-Mailbox to check how many mailboxes lack an archive before deciding if this is a live risk."
+      ],
+      "docs": "https://learn.microsoft.com/exchange/security-and-compliance/messaging-records-management/enable-archive-mailboxes"
+    },
+    "Message Recall (Organization Config export)": {
+      "requiredSettings": [
+        { "label": "Message recall", "value": "Enabled (MessageRecallEnabled: null = effective True)" },
+        { "label": "Recall already-read messages", "value": "null — UNRESOLVED (see steps)" },
+        { "label": "Automatic forced read receipt", "value": "False" }
+      ],
+      "steps": [
+        "Same underlying object as 'Mail Flow Message Recall Settings' (id message-recall), exported a second time under Inforcer's Organization Config category.",
+        "Verify the unresolved field directly: Get-OrganizationConfig | Select-Object RecallReadMessagesEnabled — one export shows True, this one shows null, and there's no confirmed Microsoft default for this specific field.",
+        "Kept as a separate row to match how the Inforcer baseline represents it; use the live value from the cmdlet as the source of truth."
+      ],
+      "docs": "https://learn.microsoft.com/exchange/message-recall-in-exchange-online"
+    }
+  }
+}
