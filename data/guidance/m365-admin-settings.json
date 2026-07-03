@@ -1,0 +1,62 @@
+{
+  "meta": {
+    "tier": "Tier1",
+    "section": "M365 Admin Settings",
+    "source": "Microsoft Learn (learn.microsoft.com/microsoft-365 + learn.microsoft.com/entra) — portal paths and step wording grounded via the Microsoft Learn MCP on 2026-07-03.",
+    "generalNotes": [
+      "These are tenant-wide org settings, not per-user objects — one change applies to the whole tenant. There is nothing to stage in Report-only, so validate by re-reading the setting after saving.",
+      "Two of the three live under Microsoft 365 admin center > Settings > Org Settings (different tabs); the guest-access one lives in the Microsoft Entra admin center. The exact path is on each policy below.",
+      "Role needed: Password expiration = User Administrator; Guest access restriction = User Administrator (Global Admin also works); Self-service trials/purchases = Global Administrator only (including partners acting AOBO)."
+    ]
+  },
+  "policies": {
+    "Password Expiration Policy": {
+      "requiredSettings": [
+        { "label": "Set passwords to never expire (recommended)", "value": "Checked / enabled — this is the target baseline state (passwordsNeverExpire = true)" },
+        { "label": "Days before passwords expire", "value": "N/A — this field is only used if you clear the never-expire box (valid range 14–730)" },
+        { "label": "Scope", "value": "Cloud-only accounts. Passwords synced from on-prem AD via Entra Connect follow the on-prem AD DS policy, not this setting." }
+      ],
+      "steps": [
+        "Sign in to the Microsoft 365 admin center as a User Administrator.",
+        "Left nav → Show all → Settings → Org Settings.",
+        "Open the Security & Privacy tab → select Password expiration policy.",
+        "Ensure 'Set passwords to never expire (recommended)' is checked, then Save. (If it is already checked, the baseline is met — no change needed.)",
+        "Deliver alongside MFA enforcement and communicate to users, since anyone used to periodic expiry prompts will stop receiving them (expiry notifications have also been retired by Microsoft).",
+        "Note: never-expire passwords still age on LastPasswordChangeDateTime — if this is ever switched back to expiring, any password older than 90 days forces a change at next sign-in. PowerShell equivalent: Update-MgUser -UserId <id> -PasswordPolicies DisablePasswordExpiration."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/admin/manage/set-password-expiration-policy"
+    },
+    "DirectoryGuestAccess": {
+      "requiredSettings": [
+        { "label": "Guest user access", "value": "Guest user access is restricted to properties and memberships of their own directory objects (most restrictive)" },
+        { "label": "Effect", "value": "Guests can see only their own profile — no other users, no groups, no group memberships (even when searching by UPN or object ID)." },
+        { "label": "Propagation", "value": "Change can take up to ~15 minutes to take effect for guest users." }
+      ],
+      "steps": [
+        "Sign in to the Microsoft Entra admin center (entra.microsoft.com) as a User Administrator.",
+        "Browse to Entra ID → External Identities → External collaboration settings.",
+        "Under Guest user access, select 'Guest user access is restricted to properties and memberships of their own directory objects (most restrictive)'.",
+        "Select Save. Allow up to 15 minutes for it to apply.",
+        "Note: this restricts directory read only. It does NOT block a guest's access to joined groups in Microsoft 365 services like Teams, and guests can still be added to admin roles regardless — those are governed separately (Conditional Access / role assignment)."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/users/users-restrict-guest-permissions#update-in-the-microsoft-entra-admin-center"
+    },
+    "Self-Service Trials and Purchases (28 products)": {
+      "requiredSettings": [
+        { "label": "Per-product setting", "value": "Do not allow — set on each eligible product (there is NO single tenant-wide off switch; the policy is managed per product)" },
+        { "label": "Options per product", "value": "Allow | Allow for trials only | Do not allow. Baseline = Do not allow for every product." },
+        { "label": "Role", "value": "Global Administrator only (also required for partners acting AOBO)." },
+        { "label": "Propagation", "value": "Up to 72 hours for a change to take effect. New products Microsoft adds later default to Allow, so re-check periodically." }
+      ],
+      "steps": [
+        "Sign in to the Microsoft 365 admin center as a Global Administrator.",
+        "Settings → Org Settings → Services tab → Self-service trials and purchases.",
+        "The page lists every eligible product and its current setting. Select a product name to open its panel.",
+        "Set it to 'Do not allow' and Save changes. Repeat for each product in the list (this is why the baseline covers all ~28).",
+        "Faster bulk alternative via PowerShell (MSCommerce module): review with `Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase`, then for each ProductId run `Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId <ProductId> -Enabled $False`.",
+        "Note: AllowSelfServicePurchase covers both purchases and trials in one setting, and admins keep the ability to centrally assign licensed products — only the user-initiated self-serve path is blocked. The product list changes over time, so the exact count can drift from 28; verify against the current list rather than the number."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/manage-self-service-purchases-admins#allow-or-block-self-service-purchases-and-trials"
+    }
+  }
+}
