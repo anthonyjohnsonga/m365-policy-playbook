@@ -1,0 +1,173 @@
+{
+  "meta": {
+    "tier": "Tier1",
+    "section": "Endpoint Management — Windows (Phase 6 of 7: Experience / browsers / privacy / telemetry)",
+    "source": "Microsoft Learn (learn.microsoft.com/intune + sharepoint OneDrive policies + deployedge) — portal paths and Settings Catalog categories grounded via the Microsoft Learn MCP on 2026-07-03.",
+    "generalNotes": [
+      "All 13 are Windows Settings Catalog configuration profiles: Devices > Configuration > Create > New policy > Windows 10 and later > Settings catalog. Add the category's settings, then assign to the Windows device group.",
+      "The 'U' vs 'D' suffix reflects scope: U = user-scoped settings (apply per signed-in user), D = device-scoped. Some settings only exist in one scope — pick the matching one in the settings picker. Browsers have both a 'Security' profile (protection / enterprise controls) and an 'Experience' profile (homepage, search, UX); keep them as separate profiles as the master splits them.",
+      "Most are LOW/invisible; the MEDIUM ones (Edge experience, OneDrive Known Folder Move, block Microsoft accounts) are user-visible — communicate before rollout."
+    ]
+  },
+  "policies": {
+    "Win - Experience - U - Microsoft Edge": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog — Microsoft Edge (browser UX)" },
+        { "label": "Intent", "value": "Homepage / startup pages, default search engine, sync/sign-in behavior, extension controls per baseline" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Add the Microsoft Edge experience settings (startup/home, default search, sync, allowed extensions); assign to the Windows device group.",
+        "Note (MEDIUM impact): changes the visible browser experience (home page / search / sign-in) — brief users. Keep separate from the Edge Security profile below."
+      ],
+      "docs": "https://learn.microsoft.com/deployedge/configure-microsoft-edge"
+    },
+    "Win - Experience - U - OneDrive": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog — OneDrive" },
+        { "label": "Silently move Windows known folders to OneDrive (KFM)", "value": "Enabled for Desktop/Documents/Pictures, with your Tenant ID" },
+        { "label": "Silently sign in users to OneDrive (SilentAccountConfig)", "value": "Enabled" },
+        { "label": "Files On-Demand", "value": "Enabled" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Add: 'Silently move Windows known folders to OneDrive' (Desktop/Documents/Pictures, tenant ID); 'Silently sign in users to the OneDrive sync app'; 'Use OneDrive Files On-Demand'.",
+        "Assign to the Windows device group. (Stage the silent KFM rollout — Microsoft recommends ≤1,000 devices/day.)",
+        "Note (MEDIUM impact): Desktop/Documents/Pictures are redirected into OneDrive silently — users see their known folders now backed up; communicate so it isn't mistaken for data moving/loss."
+      ],
+      "docs": "https://learn.microsoft.com/sharepoint/redirect-known-folders"
+    },
+    "Win - Experience - U - Microsoft Accounts": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog (Accounts / Local Policies Security Options)" },
+        { "label": "Block Microsoft (consumer) accounts", "value": "Users can't add or log on with personal Microsoft accounts on the managed device" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Add the 'Accounts: Block Microsoft accounts' / Allow Microsoft Account Connection = blocked setting; assign to the Windows device group.",
+        "Note (MEDIUM impact): users can no longer sign in to apps/store with a personal MSA on company devices — expected for a managed fleet, but flag it for anyone who used a personal account."
+      ],
+      "docs": "https://learn.microsoft.com/intune/configuration/settings-catalog"
+    },
+    "Win - Experience - U - Office Apps": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog — Microsoft Office (user experience)" },
+        { "label": "Intent", "value": "Office app user settings — default file formats, feature toggles, first-run/telemetry prompts (macro security is primarily covered by the ASR + Office security baseline)" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Add the Microsoft Office user-experience settings per the baseline; assign to the Windows device group.",
+        "Note: LOW impact — cosmetic/behavioral Office defaults."
+      ],
+      "docs": "https://learn.microsoft.com/intune/configuration/settings-catalog"
+    },
+    "Win - Security - D - Microsoft Edge": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog — Microsoft Edge (security / enterprise)" },
+        { "label": "Intent", "value": "SmartScreen enabled, minimum TLS 1.2, block third-party cookies, control password saving / sync, Application Bound Encryption per baseline" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Add the Edge security settings (SmartScreen, TLS 1.2 minimum, cookie/popup/notification controls, sync/password-save restrictions); assign to the Windows device group.",
+        "Note: LOW impact — enterprise browser hardening; kept separate from the Edge experience profile above."
+      ],
+      "docs": "https://learn.microsoft.com/deployedge/microsoft-edge-security-config-io"
+    },
+    "Win - Security - D - Google Chrome": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog — Google Chrome (requires the Chrome ADMX / Chrome installed)" },
+        { "label": "Intent", "value": "Chrome security controls — SafeBrowsing, block third-party cookies, restrict extensions, password manager per baseline" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Add the Google Chrome security settings (Safe Browsing, extension allow/block, cookie controls); assign to the Windows device group.",
+        "Note: LOW impact — only affects devices where Chrome is installed."
+      ],
+      "docs": "https://learn.microsoft.com/intune/configuration/administrative-templates-import-custom"
+    },
+    "Win - Experience - D - Google Chrome": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog — Google Chrome (experience)" },
+        { "label": "Intent", "value": "Chrome UX at device level — homepage/startup, default search, sign-in/sync behavior" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Add the Chrome experience settings per the baseline; assign to the Windows device group.",
+        "Note: LOW impact — device-level Chrome UX; only where Chrome is installed."
+      ],
+      "docs": "https://learn.microsoft.com/intune/configuration/administrative-templates-import-custom"
+    },
+    "Win - Network - D - Delivery Optimization": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog — Delivery Optimization" },
+        { "label": "Download mode", "value": "HTTP + peering behind same NAT (1) or Group (2) per baseline — controls whether update content is shared P2P across the LAN" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Set the Delivery Optimization Download Mode (and optional group/bandwidth limits) per the baseline; assign to the Windows device group.",
+        "Note: LOW impact — reduces WAN bandwidth by sharing update content between local devices; invisible to users."
+      ],
+      "docs": "https://learn.microsoft.com/windows/deployment/do/waas-delivery-optimization"
+    },
+    "Win - Privacy - D - General": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog — Privacy" },
+        { "label": "Intent", "value": "Limit consumer data flows — advertising ID off, tailored experiences off, location/app-permission and activity-history restrictions per baseline" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Apply the privacy settings (disable advertising ID, tailored experiences, activity feed, restrict app permissions) per the baseline; assign to the Windows device group.",
+        "Note: LOW impact — reduces consumer telemetry/personalization; pairs with the Telemetry profile."
+      ],
+      "docs": "https://learn.microsoft.com/intune/configuration/settings-catalog"
+    },
+    "Win - Experience - D - Windows Spotlight": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog — Experience / Cloud Content" },
+        { "label": "Windows Spotlight", "value": "Turn off Windows Spotlight features (dynamic lock-screen images, tips, suggestions, consumer content)" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Turn off Windows Spotlight / cloud consumer content and suggestions; assign to the Windows device group.",
+        "Note: LOW impact — removes lock-screen ads/tips and third-party suggested content."
+      ],
+      "docs": "https://learn.microsoft.com/intune/configuration/settings-catalog"
+    },
+    "Win - Experience - D - Personalization": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog — Personalization / Control Panel Display" },
+        { "label": "Intent", "value": "Optionally lock desktop wallpaper/theme/colors so devices keep a consistent look; restrict user changes per baseline" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Apply the personalization restrictions (e.g. enforce/lock wallpaper or theme) per the baseline; assign to the Windows device group.",
+        "Note: LOW impact — users may be unable to change wallpaper/theme if locked; keep light unless the org wants uniform branding."
+      ],
+      "docs": "https://learn.microsoft.com/intune/configuration/settings-catalog"
+    },
+    "Win - Experience - D - OneDrive": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog — OneDrive (device-scoped)" },
+        { "label": "Intent", "value": "Restrict sync to your tenant (AllowTenantList), block personal OneDrive sync (DisablePersonalSync), sync-app update ring, low-disk-space guards" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Add the device-scoped OneDrive controls: allow sync only for your tenant ID, block personal OneDrive accounts, set the sync-app update ring; assign to the Windows device group.",
+        "Note (MEDIUM impact): personal-OneDrive sync is blocked and only your tenant can sync — expected for managed devices; complements the user-scoped KFM profile above."
+      ],
+      "docs": "https://learn.microsoft.com/sharepoint/use-group-policy"
+    },
+    "Win - Monitoring - D - Telemetry": {
+      "requiredSettings": [
+        { "label": "Profile type", "value": "Settings catalog — System / Diagnostic data" },
+        { "label": "Allow Telemetry (diagnostic data level)", "value": "Required diagnostic data (or the baseline level) — enough for WUFB reports / MDE, without full optional data" }
+      ],
+      "steps": [
+        "Devices > Configuration > Create > Windows 10 and later > Settings catalog.",
+        "Set the diagnostic data level (Allow Telemetry) to the baseline value; assign to the Windows device group.",
+        "Note: LOW impact / invisible — but keep it at least 'Required' so WUFB Reports (Phase 4) and update/security reporting have the data they need."
+      ],
+      "docs": "https://learn.microsoft.com/windows/privacy/configure-windows-diagnostic-data-in-your-organization"
+    }
+  }
+}
