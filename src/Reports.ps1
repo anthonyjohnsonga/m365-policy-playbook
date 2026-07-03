@@ -19,7 +19,7 @@ function Get-RolloutPhases {
         @(
             [pscustomobject]@{ Name='Phase 1 - Document low-impact baselines'; Desc='Verify backend / admin-level settings first.'; Items=@($pol | Where-Object { $_.ImpactClass -eq 'low' }) }
             [pscustomobject]@{ Name='Phase 2 - Review user-facing baselines'; Desc='Medium / high impact settings to walk through with the client.'; Items=@($pol | Where-Object { $_.ImpactClass -in 'medium','high' }) }
-            [pscustomobject]@{ Name='Phase 3 - Track drift'; Desc='Re-verify on a schedule and record any drift from Baseline 0.'; Items=@() }
+            [pscustomobject]@{ Name='Phase 3 - Track drift'; Desc='Re-verify on a schedule and record any drift from the documented baseline.'; Items=@() }
         )
     }
 }

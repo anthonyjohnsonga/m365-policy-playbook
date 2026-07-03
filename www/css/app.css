@@ -204,11 +204,11 @@ code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
 .controls select:focus,.controls input:focus{outline:none;box-shadow:0 0 0 3px var(--brandlt)}
 .controls input[type=text]:focus,.controls input[type=date]:focus{border-color:var(--brand2)}
 .status-sel{font-weight:700}
-.status-sel.s-completed{color:var(--low);border-color:var(--low)}
-.status-sel.s-planned{color:var(--med);border-color:var(--med)}
-.status-sel.s-accepteddeviation{color:var(--accent);border-color:var(--accent)}
-.status-sel.s-unaccepteddeviation{color:var(--high);border-color:var(--high)}
-.status-sel.s-notstarted{color:var(--muted)}
+.status-sel.s-completed,.status-sel.s-verified{color:var(--low);border-color:var(--low)}
+.status-sel.s-planned,.status-sel.s-inprogress{color:var(--med);border-color:var(--med)}
+.status-sel.s-accepteddeviation,.status-sel.s-na{color:var(--accent);border-color:var(--accent)}
+.status-sel.s-unaccepteddeviation,.status-sel.s-driftdetected{color:var(--high);border-color:var(--high)}
+.status-sel.s-notstarted,.status-sel.s-notverified{color:var(--muted)}
 .notes{width:100%;margin-top:10px;min-height:38px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;background:var(--ctl);color:var(--ink);transition:border-color .15s ease,box-shadow .15s ease}
 .notes:focus{outline:none;border-color:var(--brand2);box-shadow:0 0 0 3px var(--brandlt)}
 
@@ -287,11 +287,11 @@ code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
 .tl-plan.overdue{color:var(--high);font-weight:700}
 .tl-plan.soon{color:var(--med);font-weight:700}
 .status-chip{font-size:10px;font-weight:700;padding:3px 9px;border-radius:11px;white-space:nowrap;min-width:120px;text-align:center}
-.status-chip.s-completed{background:var(--low-bg);color:var(--low)}
-.status-chip.s-accepteddeviation{background:var(--accent-bg);color:var(--accent)}
-.status-chip.s-planned{background:var(--med-bg);color:var(--med)}
-.status-chip.s-unaccepteddeviation{background:var(--hi-bg);color:var(--high)}
-.status-chip.s-notstarted{background:var(--chipbg);color:var(--muted)}
+.status-chip.s-completed,.status-chip.s-verified{background:var(--low-bg);color:var(--low)}
+.status-chip.s-accepteddeviation,.status-chip.s-na{background:var(--accent-bg);color:var(--accent)}
+.status-chip.s-planned,.status-chip.s-inprogress{background:var(--med-bg);color:var(--med)}
+.status-chip.s-unaccepteddeviation,.status-chip.s-driftdetected{background:var(--hi-bg);color:var(--high)}
+.status-chip.s-notstarted,.status-chip.s-notverified{background:var(--chipbg);color:var(--muted)}
 .tl-empty{font-size:12.5px;color:var(--muted);font-style:italic;padding:8px}
 .mini-badge{font-size:9px;font-weight:800;color:#fff;padding:2px 7px;border-radius:10px;flex:none}
 .mini-badge.high{background:var(--high)} .mini-badge.medium{background:var(--med)} .mini-badge.low{background:var(--low)} .mini-badge.none{background:#9ca3af}

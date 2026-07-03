@@ -69,12 +69,15 @@ export async function renderTimeline(){
     const items = ph.items.slice().sort((a,b)=>
       (rank[a.impactClass]-rank[b.impactClass]) || a.name.localeCompare(b.name));
 
-    // status breakdown for the summary line
-    const c = {done:0, planned:0, notstarted:0, unaccepted:0, overdue:0};
+    // status breakdown for the summary line (covers both the Tier 0/1 and the
+    // Email Security status vocabularies; unknown statuses fall to "not started")
+    const c = {done:0, planned:0, inprogress:0, notstarted:0, unaccepted:0, drift:0, overdue:0};
     items.forEach(it => {
       if(it.done) c.done++;
       else if(it.status==='Planned') c.planned++;
+      else if(it.status==='In Progress') c.inprogress++;
       else if(it.status==='Unaccepted Deviation') c.unaccepted++;
+      else if(it.status==='Drift Detected') c.drift++;
       else c.notstarted++;
       if(!it.done && it.dueState==='overdue') c.overdue++;
     });
@@ -82,8 +85,10 @@ export async function renderTimeline(){
     if(c.overdue)    chips.push(`<span class="chip-mini overdue">&#9888; ${c.overdue} overdue</span>`);
     if(c.done)       chips.push(`<span class="chip-mini done">${c.done} done</span>`);
     if(c.planned)    chips.push(`<span class="chip-mini planned">${c.planned} planned</span>`);
+    if(c.inprogress) chips.push(`<span class="chip-mini planned">${c.inprogress} in progress</span>`);
     if(c.notstarted) chips.push(`<span class="chip-mini notstarted">${c.notstarted} not started</span>`);
     if(c.unaccepted) chips.push(`<span class="chip-mini unaccepted">${c.unaccepted} unaccepted</span>`);
+    if(c.drift)      chips.push(`<span class="chip-mini unaccepted">${c.drift} drift</span>`);
 
     const rows = items.length
       ? items.map(it => `

@@ -2,9 +2,9 @@
 #  DataAccess.ps1  -  Playbook load / normalize / save (Excel round-trip)
 #  M365 Policy Playbook App
 # ============================================================================
-#  Both playbooks share an identical tracking-column layout on their main
+#  All playbooks share an identical tracking-column layout on their main
 #  sheet:   J = Status | K = Date | L = Tech | M = Notes,  data starts row 3.
-#  That lets one Save routine serve both books.
+#  That lets one Save routine serve every book.
 # ----------------------------------------------------------------------------
 
 Import-Module ImportExcel -ErrorAction Stop
@@ -42,6 +42,29 @@ function Get-PlaybookConfig {
             StatusOptions= @('Not Started','Planned','Completed','Accepted Deviation','Unaccepted Deviation')
             Verb         = 'Verify'
             VerbPast     = 'Verified'
+            CurrentSettingsHeader = 'Current Settings (Baseline 0)'
+            TrackingColumns = [ordered]@{
+                Status        = 'Status'
+                DateCompleted = 'Verified Date'
+                Tech          = 'Tech'
+                Notes         = 'Drift / Change Notes'
+                PlannedDate   = 'Planned Date'
+            }
+        }
+        EmailSecurity = [ordered]@{
+            Key          = 'EmailSecurity'
+            DisplayName  = 'Inforcer Baseline Email Security (Verification)'
+            ShortName    = 'Email Security'
+            MasterFile   = 'Inforcer_BaselineEmailSecurity_Playbook_v1.xlsx'
+            Sheet        = "$([char]0x2705) Baseline Email Security"
+            # This workbook ships its own status vocabulary (the sheet's data
+            # validation + Dashboard COUNTIF formulas use these exact strings),
+            # so we keep it instead of the Tier 0/1 set — that way the client
+            # copy's built-in Dashboard keeps working when opened in Excel.
+            StatusOptions= @('Not Verified','In Progress','Verified','Drift Detected','N/A')
+            Verb         = 'Verify'
+            VerbPast     = 'Verified'
+            CurrentSettingsHeader = 'Current Settings (Baseline)'
             TrackingColumns = [ordered]@{
                 Status        = 'Status'
                 DateCompleted = 'Verified Date'
@@ -119,6 +142,7 @@ function Get-PlaybookKeyForFile {
     $sheets = (Get-ExcelSheetInfo -Path $Path).Name
     if ($sheets -contains "$([char]0x2705) Checklist") { return 'Tier1' }
     if ($sheets -contains "$([char]0x2705) Baseline")  { return 'Tier0' }
+    if ($sheets -contains "$([char]0x2705) Baseline Email Security") { return 'EmailSecurity' }
     # fall back to _meta sheet
     if ($sheets -contains '_meta') {
         $m = Import-Excel -Path $Path -WorksheetName '_meta'
@@ -173,6 +197,8 @@ function Import-Playbook {
             }
         }
         else {
+            # Tier0 and EmailSecurity share this layout; only the header of the
+            # current-settings column differs (see CurrentSettingsHeader).
             $section = (@($r.'Product', $r.'Category') | Where-Object { $_ }) -join ' - '
             $p = [ordered]@{
                 Id                 = $i
@@ -191,7 +217,7 @@ function Import-Playbook {
                 Notes              = [string]$r.'Drift / Change Notes'
                 AutoRemediable     = ''
                 License            = ''
-                CurrentSettings    = [string]$r.'Current Settings (Baseline 0)'
+                CurrentSettings    = [string]$r.($cfg.CurrentSettingsHeader)
             }
         }
         # default (or normalize any old/unknown status) to the first option
@@ -245,7 +271,7 @@ function Invoke-AutoPhaseDistribution {
 function New-Engagement {
     param(
         [Parameter(Mandatory)][string]$ClientName,
-        [Parameter(Mandatory)][ValidateSet('Tier1','Tier0')][string]$PlaybookKey
+        [Parameter(Mandatory)][ValidateSet('Tier1','Tier0','EmailSecurity')][string]$PlaybookKey
     )
     $cfg    = (Get-PlaybookConfig)[$PlaybookKey]
     $master = Join-Path (Get-MastersPath) $cfg.MasterFile
@@ -641,6 +667,10 @@ function Add-MasterPolicy {
 # --- Which statuses count as "complete" (progress %) -------------------------
 function Get-DoneStatusSet {
     param([Parameter(Mandatory)][string]$PlaybookKey)
+    # EmailSecurity uses the workbook's own vocabulary: 'Verified' is done, and
+    # 'N/A' (nothing to verify in this tenant) counts as done for progress.
+    # 'Drift Detected' stays open — it was checked but still needs action.
+    if ($PlaybookKey -eq 'EmailSecurity') { return @('Verified','N/A') }
     @('Completed','Accepted Deviation')
 }
 
