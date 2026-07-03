@@ -6,6 +6,7 @@ import { dueState, dueBadgeHtml, statusClass, toDateVal } from './format.js';
 import { markDirty } from './persistence.js';
 import { setView } from './views.js';
 import { updateBulkCount } from './bulk.js';
+import { openConfigure, hasGuidance } from './configure.js';
 
 export async function loadPolicies(){
   const r = await api('/api/policies');
@@ -72,29 +73,15 @@ export function visiblePolicies(){
   });
 }
 
-// Optional per-policy "how to configure" reference (from data/guidance/*.json),
-// shown as a collapsed details block. Only policies with guidance render it.
-export function guidanceHtml(g){
-  if(!g) return '';
-  // A single-item list can round-trip through PowerShell's JSON as a scalar, so
-  // coerce to an array before mapping.
-  const asArray = v => v == null ? [] : (Array.isArray(v) ? v : [v]);
-  const settings = asArray(g.requiredSettings).map(s =>
-    `<tr><td>${enc(s.label)}</td><td>${enc(s.value)}</td></tr>`).join('');
-  const steps = asArray(g.steps).map(s => `<li>${enc(s)}</li>`).join('');
-  // Only render the link for a real http(s) URL so a javascript:/data: href can't slip in.
-  const docsUrl = (g.docs && /^https?:\/\//i.test(g.docs)) ? g.docs : '';
-  const docs = docsUrl ? `<div class="guide-docs"><a href="${enc(docsUrl)}" target="_blank" rel="noopener">Microsoft Learn reference ↗</a></div>` : '';
-  if(!settings && !steps && !docs) return '';
-  return `<details class="guide">
-    <summary>How to configure <span class="guide-hint">settings &amp; steps</span></summary>
-    <div class="guide-body">
-      ${settings?`<div class="guide-h">Settings to meet this policy</div>
-        <table class="guide-tbl"><tbody>${settings}</tbody></table>`:''}
-      ${steps?`<div class="guide-h">Configuration steps</div><ol class="guide-steps">${steps}</ol>`:''}
-      ${docs}
-    </div>
-  </details>`;
+// Per-policy "how to configure" call-to-action. Guidance lives in
+// data/guidance/*.json; policies that have it get a Configure button that opens
+// the guided walkthrough modal (see configure.js). Policies without guidance
+// render nothing here.
+export function configBtnHtml(p){
+  if(!hasGuidance(p)) return '';
+  return `<button type="button" class="btn-config" data-config="${p.Id}">
+    <span class="cfg-ico">&#9881;</span> How to configure
+    <span class="cfg-cta-hint">steps &amp; settings</span></button>`;
 }
 
 export function renderCards(){
@@ -129,7 +116,7 @@ export function renderCards(){
         ${p.PortalPath?`<span class="portal">${enc(p.PortalPath)}</span>`:''}
         ${extra.join('')}
       </div>
-      ${guidanceHtml(p.Guidance)}
+      ${configBtnHtml(p)}
       <div class="controls">
         <span><label>Status</label>
           <select class="status-sel ${statusClass(p.Status)}" data-field="Status">${opts}</select></span>
@@ -146,6 +133,8 @@ export function renderCards(){
 
   $$('#cards .pcard').forEach(card => {
     const id = +card.dataset.id;
+    const cfgBtn = card.querySelector('[data-config]');
+    if(cfgBtn) cfgBtn.addEventListener('click', () => openConfigure(id));
     $$('[data-field]', card).forEach(el => {
       const ev = el.tagName==='SELECT' ? 'change' : (el.type==='date'?'change':'input');
       let handler = () => updateField(id, el.dataset.field, el.value, el);

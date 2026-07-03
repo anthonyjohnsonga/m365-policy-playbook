@@ -7,6 +7,7 @@ import { updateSaveIndicator, doSave, scheduleAutosave, cancelAutosave } from '.
 import { initTheme } from './theme.js';
 import { initSettings } from './settings.js';
 import { initMaster } from './master.js';
+import { initConfigure } from './configure.js';
 import { applySummary, loadPolicies, renderCards } from './policies.js';
 import { setupBulk, updateBulkCount } from './bulk.js';
 import { setView, wireViews } from './views.js';
@@ -16,6 +17,7 @@ async function boot(){
   initTheme();
   initSettings();
   initMaster();
+  initConfigure();
   // Warn before leaving with unsaved work; safety-net autosave every 20s.
   window.addEventListener('beforeunload', e => {
     if(state.dirty || state.saving){ e.preventDefault(); e.returnValue = ''; }

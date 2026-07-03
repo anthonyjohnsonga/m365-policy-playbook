@@ -155,48 +155,68 @@ code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
 .kv b{color:var(--ink);font-weight:600}
 .portal{font-family:Consolas,monospace;font-size:12px;background:var(--portal);border:1px solid var(--line);padding:4px 8px;border-radius:5px}
 
-/* ---- per-policy "How to configure" reference (collapsible) ---- */
-/* --g-accent / --g-bg default to the neutral blue accent, then get
-   overridden per impact below so each card tints its own panel. */
-.guide{--g-accent:var(--accent);--g-bg:var(--accent-bg);
-  margin-top:12px;border:1px solid var(--line);border-radius:10px;background:var(--portal);overflow:hidden;transition:border-color .18s ease,box-shadow .18s ease}
-.pcard.high   .guide{--g-accent:var(--high);--g-bg:var(--hi-bg)}
-.pcard.medium .guide{--g-accent:var(--med); --g-bg:var(--med-bg)}
-.pcard.low    .guide{--g-accent:var(--low); --g-bg:var(--low-bg)}
-.pcard.none   .guide{--g-accent:var(--muted);--g-bg:var(--chipbg)}
-.guide[open]{border-color:var(--g-accent);box-shadow:0 2px 8px rgba(0,0,0,.07)}
-.guide>summary{
-  cursor:pointer;list-style:none;user-select:none;
-  display:flex;align-items:center;gap:10px;
-  padding:11px 14px;
-  font-size:13px;font-weight:600;color:var(--g-accent);
-  background:var(--g-bg);
-  transition:background .18s ease;
-}
-.guide>summary::-webkit-details-marker{display:none}
-.guide>summary:hover{background:color-mix(in srgb, var(--g-bg) 84%, var(--g-accent))}
-.guide>summary:focus-visible{outline:2px solid var(--g-accent);outline-offset:-2px}
-.guide>summary:active{transform:translateY(.5px)}
-/* circular chevron badge on the right, rotates open */
-.guide>summary::after{
-  content:"\25BE";margin-left:auto;
-  width:22px;height:22px;border-radius:50%;
-  display:grid;place-items:center;font-size:11px;
-  color:var(--g-accent);background:var(--ctl);border:1px solid var(--line);
-  transition:transform .22s ease,background .18s ease;
-}
-.guide[open]>summary::after{transform:rotate(180deg)}
-.guide-hint{font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-size:10px;background:var(--ctl);border:1px solid var(--line);padding:2px 8px;border-radius:999px}
-.guide-body{padding:4px 14px 14px;border-top:1px solid var(--line)}
-.guide-h{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;margin:12px 0 6px}
-.guide-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
-.guide-tbl td{border-bottom:1px solid var(--rowline);padding:5px 8px;vertical-align:top;line-height:1.45}
-.guide-tbl td:first-child{width:32%;color:var(--muted);font-weight:600}
-.guide-steps{margin:0;padding-left:20px;font-size:12.5px;line-height:1.55}
-.guide-steps li{margin-bottom:4px}
-.guide-docs{margin-top:12px}
-.guide-docs a{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--g-accent);background:var(--g-bg);border:1px solid transparent;padding:6px 13px;border-radius:999px;text-decoration:none;transition:background .18s ease,border-color .18s ease}
-.guide-docs a:hover{background:color-mix(in srgb, var(--g-bg) 84%, var(--g-accent));border-color:var(--g-accent)}
+/* ---- per-policy "How to configure" card button ---- */
+/* --g-accent / --g-bg default to the neutral blue accent, then get overridden
+   per impact so the button (and the modal it opens) tint to match the policy. */
+.btn-config{--g-accent:var(--accent);--g-bg:var(--accent-bg);
+  margin-top:12px;display:flex;align-items:center;gap:9px;width:100%;
+  padding:10px 14px;border:1px solid var(--g-accent);border-radius:10px;
+  background:var(--g-bg);color:var(--g-accent);
+  font-size:13px;font-weight:600;font-family:inherit;text-align:left;cursor:pointer;
+  transition:background .18s ease,box-shadow .18s ease,transform .05s ease}
+.pcard.high   .btn-config{--g-accent:var(--high);--g-bg:var(--hi-bg)}
+.pcard.medium .btn-config{--g-accent:var(--med); --g-bg:var(--med-bg)}
+.pcard.low    .btn-config{--g-accent:var(--low); --g-bg:var(--low-bg)}
+.pcard.none   .btn-config{--g-accent:var(--muted);--g-bg:var(--chipbg)}
+.btn-config:hover{background:color-mix(in srgb, var(--g-bg) 82%, var(--g-accent));box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.btn-config:focus-visible{outline:2px solid var(--g-accent);outline-offset:2px}
+.btn-config:active{transform:translateY(.5px)}
+.btn-config .cfg-ico{font-size:15px;line-height:1}
+.btn-config .cfg-cta-hint{margin-left:auto;font-weight:600;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.05em;font-size:10px;
+  background:var(--ctl);border:1px solid var(--line);padding:2px 8px;border-radius:999px}
+
+/* ---- Configure walkthrough modal ---- */
+.modal-config{--g-accent:var(--accent);--g-bg:var(--accent-bg);max-width:640px}
+.modal-config.impact-high  {--g-accent:var(--high);--g-bg:var(--hi-bg)}
+.modal-config.impact-medium{--g-accent:var(--med); --g-bg:var(--med-bg)}
+.modal-config.impact-low   {--g-accent:var(--low); --g-bg:var(--low-bg)}
+.modal-config.impact-none  {--g-accent:var(--muted);--g-bg:var(--chipbg)}
+.modal-config .modal-head h2{color:var(--g-accent)}
+.cfg-top{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.cfg-crumbrow{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;margin-bottom:4px}
+.cfg-crumbs{display:flex;align-items:center;flex-wrap:wrap;gap:5px;font-size:12px}
+.cfg-crumb{background:var(--portal);border:1px solid var(--line);padding:3px 9px;border-radius:6px;color:var(--ink)}
+.cfg-crumb:last-child{background:var(--g-bg);border-color:var(--g-accent);color:var(--g-accent);font-weight:600}
+.cfg-sep{color:var(--muted);font-size:11px}
+.cfg-portal{margin-left:auto;display:inline-flex;align-items:center;gap:6px;
+  font-size:12px;font-weight:600;color:var(--g-accent);background:var(--g-bg);
+  border:1px solid var(--g-accent);padding:6px 13px;border-radius:999px;text-decoration:none;
+  transition:background .18s ease}
+.cfg-portal:hover{background:color-mix(in srgb, var(--g-bg) 82%, var(--g-accent))}
+.cfg-sec{margin-top:18px}
+.cfg-h{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;margin:0 0 8px}
+.cfg-h-steps{display:flex;align-items:center;gap:12px}
+.cfg-prog{margin-left:auto;display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0}
+.cfg-prog-bar{width:120px;height:7px;border-radius:999px;background:var(--track);overflow:hidden}
+.cfg-prog-fill{display:block;height:100%;background:var(--g-accent);border-radius:999px;transition:width .2s ease}
+.cfg-prog-txt{font-size:11px;font-weight:700;color:var(--g-accent);min-width:28px;text-align:right}
+.cfg-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.cfg-tbl td{border-bottom:1px solid var(--rowline);padding:7px 8px;vertical-align:top;line-height:1.5}
+.cfg-tbl td:first-child{width:34%;color:var(--muted);font-weight:600}
+.cfg-steps{list-style:none;margin:0;padding:0;counter-reset:none}
+.cfg-step{border:1px solid var(--line);border-radius:9px;margin-bottom:8px;background:var(--ctl);transition:border-color .15s ease,background .15s ease}
+.cfg-step label{display:flex;align-items:flex-start;gap:11px;padding:11px 13px;cursor:pointer;font-size:13.5px;line-height:1.5}
+.cfg-step .cfg-check{margin-top:2px;width:17px;height:17px;flex:none;accent-color:var(--g-accent);cursor:pointer}
+.cfg-step .cfg-num{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
+  font-size:11px;font-weight:700;color:var(--g-accent);background:var(--g-bg);border:1px solid var(--g-accent)}
+.cfg-step .cfg-txt{flex:1}
+.cfg-step.done{border-color:var(--g-accent);background:var(--g-bg)}
+.cfg-step.done .cfg-txt{color:var(--muted);text-decoration:line-through}
+.cfg-step.done .cfg-num{background:var(--g-accent);color:#fff}
+.cfg-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:20px;padding-top:14px;border-top:1px solid var(--line)}
+.cfg-learn{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--g-accent);text-decoration:none}
+.cfg-learn:hover{text-decoration:underline}
 
 .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:14px;padding-top:13px;border-top:1px dashed var(--line)}
 .controls label{font-size:11px;color:var(--muted);font-weight:600;margin-right:4px}

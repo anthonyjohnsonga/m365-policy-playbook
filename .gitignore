@@ -11,6 +11,9 @@
 # Automatic backups taken before each master edit (admin "Manage master")
 /data/masters/_backups/
 
+# Local working notes - never publish
+/NOTES.md
+
 # OS / editor cruft
 Thumbs.db
 desktop.ini
