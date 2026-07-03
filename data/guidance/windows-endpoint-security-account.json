@@ -1,0 +1,84 @@
+{
+  "meta": {
+    "tier": "Tier1",
+    "section": "Endpoint Management — Windows (Phase 3 of 7: Endpoint Security — Account Protection / Firewall / Disk Encryption)",
+    "source": "Microsoft Learn (learn.microsoft.com/intune) — portal paths, profile types, and BitLocker/LAPS settings grounded via the Microsoft Learn MCP on 2026-07-03.",
+    "generalNotes": [
+      "All five are Endpoint security policies (Endpoint security node): Account protection (LAPS + Local user group membership profiles), Firewall, and Disk encryption. Pattern for each: Create Policy > Platform = Windows > pick the named Profile > configure > assign.",
+      "LAPS prerequisite: the tenant-level 'Enable Microsoft Entra LAPS' toggle must already be On (Entra ID > Devices > Device settings — that's the LocalAdministratorPassword item from the Authentication Methods section). Assign LAPS to DEVICE groups, not user groups, to avoid config conflicts.",
+      "Assign to Windows device groups and pilot the two disruptive ones (Local Admins, BitLocker) before broad rollout."
+    ]
+  },
+  "policies": {
+    "Win - Security - D - LAPS": {
+      "requiredSettings": [
+        { "label": "Policy type", "value": "Endpoint security > Account protection > profile: Local admin password solution (Windows LAPS)" },
+        { "label": "Backup Directory", "value": "Backup the password to Microsoft Entra ID" },
+        { "label": "Password requirements", "value": "Length/complexity per baseline; Password Age (rotation) e.g. 30 days" }
+      ],
+      "steps": [
+        "Confirm the tenant LAPS toggle is On (Entra ID > Devices > Device settings).",
+        "Intune admin center > Endpoint security > Account protection > Create Policy > Windows > profile Local admin password solution (Windows LAPS).",
+        "Set Backup Directory = Microsoft Entra ID; set password length/complexity and the rotation age.",
+        "Assign to a Windows DEVICE group (not user group). Note: LOW impact / invisible to users — recover/rotate passwords from Devices > (device) > Local admin password recovery."
+      ],
+      "docs": "https://learn.microsoft.com/intune/protect/windows-laps-policy"
+    },
+    "Win - Access Control - D - LAPS": {
+      "requiredSettings": [
+        { "label": "Policy type", "value": "Endpoint security > Account protection > Windows LAPS profile (account-management settings)" },
+        { "label": "Administrator Account Name", "value": "Target the managed local admin account (blank = the built-in RID-500 account)" },
+        { "label": "Automatic account management", "value": "Per baseline — manage/enable/rename the local admin account and post-authentication actions (reset password after use)" }
+      ],
+      "steps": [
+        "Same Windows LAPS profile as above (Endpoint security > Account protection) — this row covers its account-management / access-control settings.",
+        "Set Administrator Account Name to the managed account (or leave blank for the built-in local admin), and configure automatic account management / post-authentication reset per the baseline.",
+        "Assign to the Windows device group. Note: LOW impact / IT-workflow only — pairs with the LAPS row above; keep them in one coherent LAPS policy per device to avoid CSP conflicts."
+      ],
+      "docs": "https://learn.microsoft.com/intune/protect/windows-laps-policy"
+    },
+    "Win - Security - D - Local Admins": {
+      "requiredSettings": [
+        { "label": "Policy type", "value": "Endpoint security > Account protection > profile: Local user group membership" },
+        { "label": "Local group", "value": "Administrators" },
+        { "label": "Action", "value": "Replace/Restrict members to a defined set (e.g. an Entra admin group + the LAPS-managed account) — removes ad-hoc local admin rights from standard users" }
+      ],
+      "steps": [
+        "Intune admin center > Endpoint security > Account protection > Create Policy > Windows > profile Local user group membership.",
+        "Target the Administrators group and set the action (Add/Remove/Replace) so membership is limited to the approved accounts only.",
+        "Pilot first, then assign to the Windows device group.",
+        "Note (HIGH impact): users who currently have local admin are stripped of it — they can no longer install software or change system settings freely. This is one of the most disruptive policies; communicate and provide a support path (LAPS / elevation process) before enforcing."
+      ],
+      "docs": "https://learn.microsoft.com/intune/protect/endpoint-security-account-protection-policy"
+    },
+    "Win - Network - D - Firewall": {
+      "requiredSettings": [
+        { "label": "Policy type", "value": "Endpoint security > Firewall > profile: Microsoft Defender Firewall" },
+        { "label": "Enable firewall", "value": "Enabled for all three network profiles — Domain, Private, and Public" }
+      ],
+      "steps": [
+        "Intune admin center > Endpoint security > Firewall > Create Policy > Windows > profile Microsoft Defender Firewall.",
+        "Turn the firewall On (true) for the Domain, Private, and Public profiles; keep the baseline inbound/outbound defaults.",
+        "Assign to the Windows device group.",
+        "Note: LOW impact — invisible to most users; only environments with unusual local firewall rules might see connection differences."
+      ],
+      "docs": "https://learn.microsoft.com/intune/protect/endpoint-security-firewall-policy"
+    },
+    "Win - Security - D - BitLocker": {
+      "requiredSettings": [
+        { "label": "Policy type", "value": "Endpoint security > Disk encryption > profile: BitLocker" },
+        { "label": "Require Device Encryption", "value": "Enabled" },
+        { "label": "Allow Warning For Other Disk Encryption", "value": "Disabled (enables silent encryption — verify NO third-party encryption software is present first)" },
+        { "label": "Allow Standard User Encryption", "value": "Enabled (so encryption runs for non-admin users)" },
+        { "label": "Recovery", "value": "Require device to back up recovery information to Microsoft Entra = Yes" }
+      ],
+      "steps": [
+        "First confirm devices have no third-party disk-encryption software (silent BitLocker can conflict) and support TPM.",
+        "Intune admin center > Endpoint security > Disk encryption > Create Policy > Windows > profile BitLocker.",
+        "Set Require Device Encryption = Enabled; Allow Warning For Other Disk Encryption = Disabled; Allow Standard User Encryption = Enabled; Require backup of recovery info to Microsoft Entra = Yes.",
+        "Assign to the Windows device group. Note (MEDIUM impact): unencrypted devices silently begin BitLocker (one-time encryption pass, temporary perf hit); recovery keys escrow to Entra. Older hardware without a compatible TPM may fail to encrypt and show non-compliant — pairs with the Encryption compliance policy (Phase 1)."
+      ],
+      "docs": "https://learn.microsoft.com/intune/protect/encrypt-devices"
+    }
+  }
+}
