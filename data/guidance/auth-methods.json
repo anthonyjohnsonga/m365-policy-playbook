@@ -1,0 +1,194 @@
+{
+  "meta": {
+    "tier": "Tier1",
+    "section": "Identity & Access — Authentication Methods (part 1 of 2: methods + strength)",
+    "source": "Microsoft Learn (learn.microsoft.com/entra) — portal paths, setting labels, and defaults grounded via the Microsoft Learn MCP on 2026-07-03.",
+    "generalNotes": [
+      "All of these live at Entra ID > Protection > Authentication methods (the one exception, the custom strength, is under Protection > Authentication strengths). The pattern for every method is the same: open the method > Enable = Yes/No > Include target = All users > Save.",
+      "Legacy per-user MFA and SSPR method management was deprecated on 2025-09-30 — methods are now governed only by the Authentication methods policy. Confirm the policy's migration state is 'Migration Complete' (Authentication methods > Policies > Manage migration) so legacy settings are ignored.",
+      "Before DISABLING any phone-based method (SMS, Voice), audit how many users have that as their ONLY registered method (Authentication methods > Activity / registration report) and get them onto Authenticator or a passkey first — otherwise they'll be locked out.",
+      "Requires the Authentication Policy Administrator role (or higher). Changes can take time to apply to users."
+    ]
+  },
+  "policies": {
+    "MSAuthenticatorConfig": {
+      "requiredSettings": [
+        { "label": "Enable and Target", "value": "Enable = Yes; Include = All users; Authentication mode = Any" },
+        { "label": "Configure — Show application name in notifications", "value": "Enabled" },
+        { "label": "Configure — Show geographic location in notifications", "value": "Enabled" },
+        { "label": "Number matching", "value": "On (now default/enforced for push by Microsoft)" }
+      ],
+      "steps": [
+        "Entra ID > Protection > Authentication methods > Microsoft Authenticator.",
+        "Basics: Enable = Yes, Target = All users, Authentication mode = Any.",
+        "Configure tab: set 'Show application name in push and passwordless notifications' = Enabled, and 'Show geographic location…' = Enabled.",
+        "Save."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/authentication/how-to-mfa-additional-context"
+    },
+    "AuthenticatorSetupEnforce": {
+      "requiredSettings": [
+        { "label": "Registration campaign state", "value": "Enabled (Microsoft-managed default is also Enabled)" },
+        { "label": "Authentication method to nudge", "value": "Microsoft Authenticator" },
+        { "label": "Days allowed to snooze", "value": "1 (users can snooze once per day)" }
+      ],
+      "steps": [
+        "Entra ID > Protection > Authentication methods > Registration campaign.",
+        "Set State = Enabled and Authentication method = Microsoft Authenticator; Target = All users (exclude break-glass accounts).",
+        "Set Days allowed to snooze = 1 (optionally enable 'Limited number of snoozes' to force setup after 3 skips).",
+        "Save."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/authentication/how-to-mfa-registration-campaign"
+    },
+    "MultiFactorAuthConfig": {
+      "requiredSettings": [
+        { "label": "How MFA is actually enforced", "value": "Via the Conditional Access 'Require MFA for Internal Users' policy (see the CA guidance) with Security Defaults turned OFF — there is no single 'require MFA for all' toggle in the Authentication methods blade" },
+        { "label": "Authentication methods > Settings — System-preferred MFA", "value": "Enabled (prompts users for their most secure registered method)" },
+        { "label": "Authentication methods > Settings — Report suspicious activity", "value": "Enabled (lets users flag rogue MFA prompts; feeds Identity Protection)" }
+      ],
+      "steps": [
+        "Tenant-wide MFA enforcement is delivered by Conditional Access, not here — confirm the CA MFA policies are On and Security Defaults is Disabled (see DefSecSettings).",
+        "In Entra ID > Protection > Authentication methods > Settings: set System-preferred MFA = Enabled and Report suspicious activity = Enabled (both target All users).",
+        "Save.",
+        "Note (HIGH impact): this is the backbone that requires all users to complete MFA — validate the CA policy in Report-only first and exclude break-glass accounts."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/authentication/howto-mfa-mfasettings"
+    },
+    "TempPasswordConfig": {
+      "requiredSettings": [
+        { "label": "Enable and Target", "value": "Enable = Yes; Include = All users" },
+        { "label": "Use", "value": "One-time, time-limited passcode for onboarding / passwordless setup / account recovery (configurable lifetime, one-time vs reusable)" }
+      ],
+      "steps": [
+        "Entra ID > Protection > Authentication methods > Temporary Access Pass.",
+        "Enable = Yes, Target = All users; review the lifetime / one-time-use settings on the Configure tab.",
+        "Save."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/authentication/howto-authentication-temporary-access-pass"
+    },
+    "SmsAuthConfig": {
+      "requiredSettings": [
+        { "label": "Enable", "value": "No — disable SMS text message as an authentication method" },
+        { "label": "Pre-deploy audit", "value": "Find users whose ONLY registered method is SMS and migrate them to Authenticator/passkey first" }
+      ],
+      "steps": [
+        "Audit first: Authentication methods > Activity (or the registration report) for users with SMS as their sole method.",
+        "Entra ID > Protection > Authentication methods > SMS.",
+        "Set Enable = No, Save.",
+        "Note (HIGH impact): anyone relying solely on SMS will be unable to complete MFA until they register a stronger method — communicate and remediate before flipping."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/authentication/concept-authentication-methods"
+    },
+    "VoiceConfig": {
+      "requiredSettings": [
+        { "label": "Enable", "value": "No — disable voice call as an authentication method" },
+        { "label": "Pre-deploy audit", "value": "Find users whose ONLY registered method is voice and migrate them first" }
+      ],
+      "steps": [
+        "Audit first for users with voice call as their sole method.",
+        "Entra ID > Protection > Authentication methods > Voice call.",
+        "Set Enable = No, Save.",
+        "Note (HIGH impact): same lockout risk as SMS — remediate affected users before disabling."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/authentication/concept-authentication-methods"
+    },
+    "SoftwareOathConfig": {
+      "requiredSettings": [
+        { "label": "Enable and Target", "value": "Enable = Yes; Include = All users — allows third-party TOTP authenticator apps as a valid method" }
+      ],
+      "steps": [
+        "Entra ID > Protection > Authentication methods > Third-party software OATH tokens.",
+        "Enable = Yes, Target = All users.",
+        "Save."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/authentication/concept-authentication-oath-tokens"
+    },
+    "EmailOTPConfig": {
+      "requiredSettings": [
+        { "label": "Enable", "value": "No — disable email one-time passcode as an authentication method" },
+        { "label": "Scope note", "value": "Email OTP is mainly a B2B guest fallback; disabling affects guest redemption, not typically member sign-in" }
+      ],
+      "steps": [
+        "Entra ID > Protection > Authentication methods > Email OTP.",
+        "Set Enable = No, Save.",
+        "Note: if the tenant collaborates with external guests who redeem via email OTP, confirm an alternative (Microsoft account / Entra) works for them first."
+      ],
+      "docs": "https://learn.microsoft.com/entra/external-id/one-time-passcode"
+    },
+    "HardwareOathConfig": {
+      "requiredSettings": [
+        { "label": "Enable and Target", "value": "Enable = Yes; Include = All users — allows physical OATH-TOTP hardware tokens" }
+      ],
+      "steps": [
+        "Entra ID > Protection > Authentication methods > Hardware OATH tokens (Preview).",
+        "Enable = Yes, Target = All users; upload/assign tokens as needed.",
+        "Save."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/authentication/concept-authentication-oath-tokens"
+    },
+    "Fido2Config": {
+      "requiredSettings": [
+        { "label": "Enable and Target", "value": "Enable = Yes; Include = All users (covers FIDO2 keys and passkeys)" },
+        { "label": "Allow self-service set up", "value": "Yes" },
+        { "label": "Enforce attestation", "value": "Yes" },
+        { "label": "Enforce key restrictions", "value": "Yes — restrict to the approved AAGUIDs (approved key models only)" }
+      ],
+      "steps": [
+        "Entra ID > Protection > Authentication methods > FIDO2 security key.",
+        "Basics: Enable = Yes, Target = All users.",
+        "Configure tab: Allow self-service set up = Yes; Enforce attestation = Yes; Enforce key restrictions = Yes and add the approved AAGUIDs.",
+        "Save."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/authentication/howto-authentication-passwordless-security-key"
+    },
+    "QrCodeConfig": {
+      "requiredSettings": [
+        { "label": "Enable", "value": "No — disable QR code (PIN) authentication (a preview method)" }
+      ],
+      "steps": [
+        "Entra ID > Protection > Authentication methods > QR code (Preview).",
+        "Set Enable = No, Save."
+      ],
+      "docs": "https://learn.microsoft.com/graph/api/resources/qrcodepinauthenticationmethodconfiguration"
+    },
+    "Password Protection": {
+      "requiredSettings": [
+        { "label": "Lockout threshold", "value": "10 (failed sign-ins before first lockout) — 10 or lower is the recommendation" },
+        { "label": "Lockout duration in seconds", "value": "60 (or higher)" },
+        { "label": "Custom banned password list", "value": "Enforce = Yes; add org-specific weak terms (company name, local sports teams, seasons, etc.)" }
+      ],
+      "steps": [
+        "Entra ID > Protection > Authentication methods > Password protection.",
+        "Set Lockout threshold = 10 and Lockout duration = 60 seconds.",
+        "Set 'Enforce custom list' = Yes and populate the custom banned password list (the global banned list is always on).",
+        "Save. Note: customizing smart-lockout values requires Entra ID P1 (included with Business Premium)."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/authentication/howto-password-smart-lockout"
+    },
+    "Certificate-based authentication": {
+      "requiredSettings": [
+        { "label": "Enable", "value": "Disabled in this baseline (framework only) — turn on only if the org uses smart cards / X.509 certificate sign-in" }
+      ],
+      "steps": [
+        "Entra ID > Protection > Authentication methods > Certificate-based authentication.",
+        "Confirm Enable = No for the baseline (no CBA in use).",
+        "If the client later adopts smart cards: upload the trusted CAs (Protection > Show more > Certificate authorities), then enable and configure the authentication binding (single- vs multi-factor)."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/authentication/how-to-certificate-based-authentication"
+    },
+    "Inforcer - Authentication (Strength)": {
+      "requiredSettings": [
+        { "label": "Type", "value": "Custom authentication strength" },
+        { "label": "Allowed method combinations", "value": "Phishing-resistant / strong MFA: FIDO2 security key, Windows Hello for Business, Certificate-based auth (multifactor), Microsoft Authenticator (phone sign-in), hardware OATH — per the baseline" },
+        { "label": "Consumed by", "value": "The Conditional Access admin-MFA policy references this strength (see the CA guidance)" }
+      ],
+      "steps": [
+        "Entra ID > Protection > Authentication strengths > New authentication strength.",
+        "Name it (e.g. 'Inforcer Authentication Strength'), then tick the allowed method combinations for the baseline (phishing-resistant + strong methods).",
+        "Save. It then appears as a Grant control option ('Require authentication strength') in Conditional Access.",
+        "Note: this is the strength the admin CA policy points at — build/verify it before that CA policy is switched On."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/authentication/concept-authentication-strengths"
+    }
+  }
+}
