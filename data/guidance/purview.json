@@ -1,0 +1,30 @@
+{
+  "meta": {
+    "tier": "Tier1",
+    "section": "Data Protection — Microsoft Purview",
+    "source": "Microsoft Learn (learn.microsoft.com/purview) — portal path, banner wording, and PowerShell grounded via the Microsoft Learn MCP on 2026-07-03.",
+    "generalNotes": [
+      "Audit logging is ON by default for Microsoft 365 / Office 365 enterprise tenants — but NOT for Business Premium / SMB licenses or unmanaged trial tenants, where it must be turned on manually. Since these baselines target M365 Business Premium, verify rather than assume.",
+      "You need the Audit Logs role in Exchange Online (the Organization Management or Compliance Management role groups have it) to turn auditing on or off.",
+      "The 'Start recording user and admin activity' banner only appears when auditing is OFF — if you don't see it, auditing is already on. Confirm either way with the Get-AdminAuditLogConfig check below."
+    ]
+  },
+  "policies": {
+    "Unified Audit Logging": {
+      "requiredSettings": [
+        { "label": "UnifiedAuditLogIngestionEnabled", "value": "True (unified audit log recording turned on)" },
+        { "label": "Default retention", "value": "180 days for Audit (Standard); longer with per-user audit retention policies / higher licenses" },
+        { "label": "Propagation", "value": "Can take up to ~60 minutes after enabling before events are searchable" }
+      ],
+      "steps": [
+        "Sign in to the Microsoft Purview portal (purview.microsoft.com) with an account that has the Audit Logs role.",
+        "Open the Audit solution card (if it isn't shown, select View all solutions → Audit under Core).",
+        "If auditing is off, a banner 'Start recording user and admin activity' appears — select it. (No banner = already on.)",
+        "Alternatively, enable it from Exchange Online PowerShell: Set-AdminAuditLogConfig -UnifiedAuditLogIngestionEnabled $true",
+        "Verify (run in Exchange Online PowerShell, NOT Security & Compliance PowerShell, where the value always reads False): Get-AdminAuditLogConfig | Format-List UnifiedAuditLogIngestionEnabled — expect True.",
+        "Note: this is invisible to end users — no functional change. It's the prerequisite for the Office 365 Management Activity API, Microsoft Sentinel ingestion, and any audit-log search / incident investigation."
+      ],
+      "docs": "https://learn.microsoft.com/purview/audit-log-enable-disable#turn-on-auditing"
+    }
+  }
+}
