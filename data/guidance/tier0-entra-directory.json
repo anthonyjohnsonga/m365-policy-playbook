@@ -1,0 +1,111 @@
+{
+  "meta": {
+    "tier": "Tier0",
+    "section": "Entra — Directory, Devices & External Identities",
+    "source": "Microsoft Learn (learn.microsoft.com/entra) — admin-center paths and setting labels grounded via the Microsoft Learn MCP on 2026-07-03. Shares mechanisms with the Tier1 identity-directory guidance; Tier0 target values applied.",
+    "generalNotes": [
+      "Device settings (device quota, user registration, LAPS toggle, BitLocker self-recovery) are in Entra ID > Devices > Device settings. User default-permission toggles are in Entra ID > Users > User settings. Guest/external settings are in Entra ID > External Identities > External collaboration settings.",
+      "Most of these are Global Administrator changes; the BitLocker self-recovery restriction specifically needs at least Privileged Role Administrator.",
+      "These are the same underlying settings as the Tier1 identity/device rows — values here reflect the Tier0 baseline (e.g. device limit 10 rather than the Tier1 default 20)."
+    ]
+  },
+  "policies": {
+    "Device limit per user": {
+      "requiredSettings": [
+        { "label": "Maximum number of devices per user", "value": "10 (Tier0 baseline — more restrictive than the Tier1 default of 20; both joined and registered devices count against it)" }
+      ],
+      "steps": [
+        "Entra ID > Devices > Device settings.",
+        "Set 'Maximum number of devices per user' = 10 (or 'Unlimited' only if intentionally uncapped).",
+        "Save.",
+        "Verify: the value reads 10. Note (LOW impact): invisible to most users — only affects anyone who registers/joins more than 10 devices; confirm 10 is a deliberate choice vs the Tier1 default of 20."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/devices/manage-device-identities#configure-device-settings"
+    },
+    "User registration allowed": {
+      "requiredSettings": [
+        { "label": "Users may register their devices with Microsoft Entra", "value": "All (permissive default — required for Intune/MDM enrollment and BYOD registration)" }
+      ],
+      "steps": [
+        "Entra ID > Devices > Device settings.",
+        "Confirm 'Users may register their devices with Microsoft Entra' = All (this is the default; the Tier0 row uses the default, not an override).",
+        "Save if changed.",
+        "Verify: the setting reads All. Note (LOW impact): this is an ENABLER, not a restriction — leave it at All unless a stricter posture (e.g. only Intune-enrolled corporate devices) is explicitly required, in which case restrict registration and pair with a compliant-device CA policy."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/devices/manage-device-identities#configure-device-settings"
+    },
+    "Windows LAPS": {
+      "requiredSettings": [
+        { "label": "Enable Microsoft Entra Local Administrator Password Solution (LAPS)", "value": "Yes (tenant-level enablement — IsEnabled = True)" },
+        { "label": "Also required", "value": "A client-side LAPS policy deployed via Intune (Endpoint security > Account protection) with BackupDirectory = Microsoft Entra ID — the tenant toggle alone rotates nothing" },
+        { "label": "Scope / prerequisites", "value": "Entra joined or hybrid-joined Windows devices only (not Entra-registered); needs the April 2023+ Windows update. Passwords are readable only by Cloud Device Admin / Intune Admin / Helpdesk Admin roles." }
+      ],
+      "steps": [
+        "Entra ID > Devices > Device settings.",
+        "Set 'Enable Microsoft Entra Local Administrator Password Solution (LAPS)' = Yes and Save (needs at least Cloud Device Administrator).",
+        "Deploy the companion client-side LAPS policy in Intune (Endpoint security > Account protection) with the backup directory set to Microsoft Entra ID — this defines rotation schedule and account.",
+        "Verify: retrieve a password via Entra ID > Devices > Local administrator password recovery for an enrolled device.",
+        "Note (LOW impact): invisible to end users — support staff pull a unique per-device local admin password from Entra instead of a shared secret."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/devices/howto-manage-local-admin-passwords"
+    },
+    "Admin consent requests": {
+      "requiredSettings": [
+        { "label": "Users can request admin consent to apps they are unable to consent to", "value": "Yes (admin consent workflow enabled — IsEnabled = True)" },
+        { "label": "Reviewers", "value": "3 designated reviewers who receive and act on requests (verify they are current and actively monitoring)" },
+        { "label": "Notifications / reminders / expiry", "value": "Email notifications = Enabled, reminders = Enabled, request expiry = 30 days" }
+      ],
+      "steps": [
+        "Entra ID > Enterprise applications > Consent and permissions > Admin consent settings.",
+        "Set 'Users can request admin consent to apps they are unable to consent to' = Yes.",
+        "Add the 3 reviewers, enable email notifications and reminders, and set request expiry = 30 days.",
+        "Save (can take up to an hour to take effect).",
+        "Verify: a standard user hitting an app that needs admin consent sees a 'request approval' flow (not a hard block), and reviewers get an email. Note (MEDIUM impact): users experience a delay pending review — keep the reviewer list current so requests don't stall. Pairs with the user-consent settings that route them here."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/enterprise-apps/configure-admin-consent-workflow"
+    },
+    "External user leave settings": {
+      "requiredSettings": [
+        { "label": "Allow external users to remove themselves from your organization", "value": "Yes (AllowExternalIdentitiesToLeave = True)" }
+      ],
+      "steps": [
+        "Entra ID > External Identities > External collaboration settings.",
+        "Ensure 'Allow external users to remove themselves from your organization' = Yes.",
+        "Save.",
+        "Verify: reads Yes. Note (LOW impact): a privacy/compliance convenience — guests can self-remove via the My Account portal; no effect on internal users and no security risk (a guest leaving only revokes their own access)."
+      ],
+      "docs": "https://learn.microsoft.com/entra/external-id/external-collaboration-settings-configure"
+    },
+    "Guest user access restrictions": {
+      "requiredSettings": [
+        { "label": "Guest user access", "value": "Restricted to properties and memberships of their own directory objects (most restrictive — Restricted Guest User role 10dae51f-b6af-4016-8d66-8c2a99b929b3)" },
+        { "label": "Guest invite settings (AllowInvitesFrom)", "value": "adminsAndGuestInviters — only admins and users with the Guest Inviter role can invite guests" }
+      ],
+      "steps": [
+        "Entra ID > External Identities > External collaboration settings.",
+        "Set Guest user access = 'Guest user access is restricted to properties and memberships of their own directory objects (most restrictive)'.",
+        "Set Guest invite settings = 'Only users assigned to specific admin roles can invite guest users' (admins + Guest Inviter role).",
+        "Save (guest changes can take up to ~15 minutes to propagate).",
+        "Verify: a standard (non-inviter) user can't invite external guests to Teams/SharePoint; existing guests can only see their own directory object. Note (MEDIUM impact): teams that collaborate externally must route invitations through IT / a Guest Inviter — set expectations and grant the Guest Inviter role where warranted. Pairs with the guest CA policies."
+      ],
+      "docs": "https://learn.microsoft.com/entra/external-id/external-collaboration-settings-configure"
+    },
+    "Default user role permissions": {
+      "requiredSettings": [
+        { "label": "Users can register applications", "value": "No (AllowedToCreateApps = False — grant back via the Application Developer role as needed)" },
+        { "label": "Users can create security groups", "value": "No (AllowedToCreateSecurityGroups = False)" },
+        { "label": "Restrict non-admin users from creating tenants", "value": "Yes (AllowedToCreateTenants = False)" },
+        { "label": "Restrict users from recovering BitLocker key(s) for their owned devices", "value": "Yes (AllowedToReadBitLockerKeysForOwnedDevice = False) — set in Devices > Device settings, needs Privileged Role Administrator" },
+        { "label": "Read other users", "value": "Left enabled (AllowedToReadOtherUsers = True, default) — Graph/PowerShell only; don't disable (breaks Teams and other services)" }
+      ],
+      "steps": [
+        "Entra ID > Users > User settings > Default user role permissions: set 'Users can register applications' = No, 'Users can create security groups' = No, and 'Restrict non-admin users from creating tenants' = Yes. Save.",
+        "The BitLocker restriction is NOT on this page: go to Entra ID > Devices > Device settings and set 'Restrict non-admin users from recovering the BitLocker key(s) for their owned devices' = Yes (requires at least Privileged Role Administrator).",
+        "Leave 'Read other users' at its default (enabled) — it's Graph-only and disabling it breaks directory reads in Teams and elsewhere.",
+        "Verify: a standard user no longer sees options to register an app or create a security group; a self-service BitLocker key lookup now sends them to the helpdesk.",
+        "Note (MEDIUM impact): power users who self-registered apps or created groups now need an explicit role (Application Developer / Groups roles) — assign those to specific people rather than reverting the tenant-wide setting."
+      ],
+      "docs": "https://learn.microsoft.com/entra/fundamentals/users-default-permissions#restrict-member-users-default-permissions"
+    }
+  }
+}
