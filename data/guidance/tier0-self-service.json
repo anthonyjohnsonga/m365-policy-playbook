@@ -1,0 +1,717 @@
+{
+  "meta": {
+    "tier": "Tier0",
+    "section": "M365 Admin Center — Self-Service Trials & Purchases",
+    "source": "Microsoft Learn (learn.microsoft.com/microsoft-365/commerce) — MSCommerce module cmdlets, admin-center path, and per-product ProductIds grounded via the Microsoft Learn MCP on 2026-07-03.",
+    "generalNotes": [
+      "All 27 rows in this section use ONE mechanism: the AllowSelfServicePurchase policy, set per-product to Disabled. Guidance therefore repeats the same workflow for each product, differing only by product name and ProductId.",
+      "AllowSelfServicePurchase controls BOTH self-service purchases and trials for a product. Setting a product to \"Do not allow\" (Disabled) stops users from buying or starting a trial with their own payment method; admins keep full ability to assign licenses centrally.",
+      "There is no tenant-wide off switch — the whole point of this section is to disable each product one at a time. New products Microsoft adds default to Allowed, so treat this as a recurring verification, not a set-once task.",
+      "ProductIds occasionally change and some products get renamed (e.g. Clipchamp Premium, Planner Plan 1). When in doubt, run Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase to see the live ProductName/ProductId/PolicyValue before setting anything."
+    ]
+  },
+  "policies": {
+    "Dynamics 365 Marketing": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Dynamics 365 Marketing (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0LH3N"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Dynamics 365 Marketing in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0LH3N -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0LH3N — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Dynamics 365 Marketing Additional Application": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Dynamics 365 Marketing Additional Application (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0LHVK"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Dynamics 365 Marketing Additional Application in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0LHVK -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0LHVK — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Dynamics 365 Marketing Additional Non-Prod Application": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Dynamics 365 Marketing Additional Non-Prod Application (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "Not in Microsoft's published sample list — read the current ProductId from the Get-MSCommerceProductPolicies output (step 4)."
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Dynamics 365 Marketing Additional Non-Prod Application in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId <ProductId-from-step-4> -Value \"Disabled\".",
+        "Verify: re-run Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase and confirm this product shows PolicyValue = Disabled (admin center reads \"Do not allow\").",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Dynamics 365 Marketing Attach": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Dynamics 365 Marketing Attach (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0LHWP"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Dynamics 365 Marketing Attach in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0LHWP -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0LHWP — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Microsoft 365 Copilot": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Microsoft 365 Copilot (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0MM8R"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Microsoft 365 Copilot in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0MM8R -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0MM8R — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Microsoft 365 F3": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Microsoft 365 F3 (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0LH05"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Microsoft 365 F3 in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0LH05 -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0LH05 — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Microsoft ClipChamp": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Microsoft ClipChamp (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0N8SS (listed in the product blade / PowerShell as \"Clipchamp Premium\")"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Microsoft ClipChamp in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase. Heads-up: this product appears in the list as \"Clipchamp Premium\", not \"Microsoft ClipChamp\" — match on that.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0N8SS -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0N8SS — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Microsoft Purview Discovery": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Microsoft Purview Discovery (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0N8SL"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Microsoft Purview Discovery in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0N8SL -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0N8SL — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Power Apps per user": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Power Apps per user (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0LH2H"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Power Apps per user in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0LH2H -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0LH2H — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Power Automate per user": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Power Automate per user (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0LH3L"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Power Automate per user in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0LH3L -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0LH3L — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Power Automate Per User with Attended RPA Plan": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Power Automate Per User with Attended RPA Plan (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "Not in Microsoft's published sample list — read the current ProductId from the Get-MSCommerceProductPolicies output (step 4)."
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Power Automate Per User with Attended RPA Plan in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId <ProductId-from-step-4> -Value \"Disabled\".",
+        "Verify: re-run Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase and confirm this product shows PolicyValue = Disabled (admin center reads \"Do not allow\").",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Power Automate RPA": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Power Automate RPA (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0LSGZ"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Power Automate RPA in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0LSGZ -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0LSGZ — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Power BI Premium per user": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Power BI Premium per user (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0H6RP (listed in the product blade / PowerShell as \"Power BI Premium (standalone)\")"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Power BI Premium per user in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase. Heads-up: this product appears in the list as \"Power BI Premium (standalone)\", not \"Power BI Premium per user\" — match on that.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0H6RP -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0H6RP — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Power BI Pro": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Power BI Pro (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0H9MP"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Power BI Pro in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0H9MP -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0H9MP — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Project Plan 1": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Project Plan 1 (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0HDB1 (listed in the product blade / PowerShell as \"Planner Plan 1\")"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Project Plan 1 in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase. Heads-up: this product appears in the list as \"Planner Plan 1\", not \"Project Plan 1\" — match on that.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0HDB1 -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0HDB1 — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Project Plan 3": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Project Plan 3 (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0HDB0"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Project Plan 3 in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0HDB0 -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0HDB0 — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Python in Excel": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Python in Excel (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0S3X1"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Python in Excel in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0S3X1 -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0S3X1 — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Teams Essentials": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Teams Essentials (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0JN4R (listed in the product blade / PowerShell as \"Teams Essential\")"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Teams Essentials in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase. Heads-up: this product appears in the list as \"Teams Essential\", not \"Teams Essentials\" — match on that.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0JN4R -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0JN4R — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Teams Exploratory": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Teams Exploratory (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0J1FV"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Teams Exploratory in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0J1FV -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0J1FV — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Teams Premium": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Teams Premium (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0RM8K (listed in the product blade / PowerShell as \"Teams Premium Introductory Pricing\")"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Teams Premium in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase. Heads-up: this product appears in the list as \"Teams Premium Introductory Pricing\", not \"Teams Premium\" — match on that.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0RM8K -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0RM8K — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Visio Plan 1": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Visio Plan 1 (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0HD33"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Visio Plan 1 in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0HD33 -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0HD33 — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Visio Plan 2": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Visio Plan 2 (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0HD32"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Visio Plan 2 in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0HD32 -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0HD32 — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Viva Goals": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Viva Goals (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0PW0V"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Viva Goals in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0PW0V -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0PW0V — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Viva Learning": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Viva Learning (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "Not in Microsoft's published sample list — read the current ProductId from the Get-MSCommerceProductPolicies output (step 4)."
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Viva Learning in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId <ProductId-from-step-4> -Value \"Disabled\".",
+        "Verify: re-run Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase and confirm this product shows PolicyValue = Disabled (admin center reads \"Do not allow\").",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Windows 365 Business": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Windows 365 Business (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0J203"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Windows 365 Business in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0J203 -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0J203 — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Windows 365 Business with Windows Hybrid Benefit": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Windows 365 Business with Windows Hybrid Benefit (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0HX99"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Windows 365 Business with Windows Hybrid Benefit in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0HX99 -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0HX99 — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    },
+    "Windows 365 Enterprise": {
+      "requiredSettings": [
+        {
+          "label": "AllowSelfServicePurchase",
+          "value": "Disabled — blocks both self-service purchase AND trial sign-up for Windows 365 Enterprise (admin can still assign licenses centrally)."
+        },
+        {
+          "label": "ProductId",
+          "value": "CFQ7TTC0HHS9"
+        },
+        {
+          "label": "Admin role",
+          "value": "Global Administrator or Billing Administrator to change; Global Reader for read-only."
+        }
+      ],
+      "steps": [
+        "Admin-center method (quickest for one product): sign in to the Microsoft 365 admin center (admin.microsoft.com) as a Global or Billing Administrator.",
+        "Go to Settings > Org settings > Services tab > Self-service trials and purchases. (Older tenants label this 'User-owned apps and services'.)",
+        "Select Windows 365 Enterprise in the list, set it to 'Do not allow', and Save changes.",
+        "PowerShell (bulk-friendly): install once with Install-Module -Name MSCommerce, then each session run Import-Module MSCommerce and Connect-MSCommerce (sign in as Global/Billing admin). List products: Get-MSCommerceProductPolicies -PolicyId AllowSelfServicePurchase.",
+        "Disable it: Update-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0HHS9 -Value \"Disabled\". (Use \"OnlyTrialsWithoutPaymentMethod\" instead only if no-payment trials are acceptable.)",
+        "Verify: Get-MSCommerceProductPolicy -PolicyId AllowSelfServicePurchase -ProductId CFQ7TTC0HHS9 — expect PolicyValue = Disabled. In the admin center the product now reads \"Do not allow\".",
+        "Note: AllowSelfServicePurchase is forward-looking (existing user purchases/trials aren't revoked) and can take up to 72 hours to apply. There is no single tenant-wide switch — each product is set individually, and newly added products default to Allowed, so re-check this list periodically."
+      ],
+      "docs": "https://learn.microsoft.com/microsoft-365/commerce/subscriptions/allowselfservicepurchase-powershell"
+    }
+  }
+}
