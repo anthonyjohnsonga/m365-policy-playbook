@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "tier": "Tier0",
+    "section": "SharePoint / OneDrive & M365 Admin — Collaboration",
+    "source": "Microsoft Learn (learn.microsoft.com/sharepoint, /microsoft-365) — admin-center paths, setting labels, and Set-SPOTenant equivalents grounded via the Microsoft Learn MCP on 2026-07-03. Shares mechanisms with the Tier1 sharepoint-onedrive guidance; Tier0 target values applied.",
+    "generalNotes": [
+      "SharePoint/OneDrive settings live in the SharePoint admin center (Policies > Access control / Sharing, and Settings > OneDrive). Most have a Set-SPOTenant PowerShell equivalent (SharePoint Online Management Shell / PnP).",
+      "Several of these are verify-only baseline rows (Mac sync enabled, no sync exclusions, 1 TB quota) — the intent is to confirm and record the current state, not necessarily change it.",
+      "The Tier0 'OneDrive retention' and 'Deleted user data retention' rows are the SAME underlying setting (deleted user's OneDrive retention = 60 days) surfaced as two Inforcer objects — both should read 60."
+    ]
+  },
+  "policies": {
+    "Idle session sign-out": {
+      "requiredSettings": [
+        { "label": "Sign out inactive users automatically", "value": "On" },
+        { "label": "Sign out users after", "value": "60 minutes of browser inactivity" },
+        { "label": "Give notice before signing out", "value": "5 minutes (warning at 55 min — WarnAfterInSeconds = 3300)" },
+        { "label": "Requirement", "value": "Relies on Conditional Access / Entra ID P1 (included with Business Premium); tenant-wide, browser sessions only" }
+      ],
+      "steps": [
+        "SharePoint admin center > Policies > Access control > Idle session sign-out.",
+        "Turn on 'Sign out inactive users automatically'; set sign-out = 60 minutes and warning = 5 minutes.",
+        "Save. PowerShell equivalent: Set-SPOBrowserIdleSignOut -Enabled $true -WarnAfter (New-TimeSpan -Minutes 55) -SignOutAfter (New-TimeSpan -Minutes 60).",
+        "Verify: sign in to OneDrive/SharePoint in a browser, idle >55 min, confirm the warning then sign-out.",
+        "Note (MEDIUM impact): applies org-wide to SharePoint/OneDrive in the browser only (not desktop Office apps) and can't be scoped to specific users. Users on managed devices with SSO or 'Stay signed in' may not be affected; browser users who step away >1h can lose unsaved in-browser edits. For per-user targeting use Conditional Access sign-in frequency."
+      ],
+      "docs": "https://learn.microsoft.com/sharepoint/sign-out-inactive-users"
+    },
+    "OneDrive retention": {
+      "requiredSettings": [
+        { "label": "Days to retain a deleted user's OneDrive", "value": "60 (DeletedUserPersonalSiteRetentionPeriodInDays = 60). PowerShell param: OrphanedPersonalSitesRetentionPeriod (range 30–3650)" },
+        { "label": "Relationship", "value": "Same underlying setting as the 'Deleted user data retention' row — both must read 60" }
+      ],
+      "steps": [
+        "SharePoint admin center > Settings > OneDrive - Retention.",
+        "Set 'Days to retain files in a deleted user's OneDrive' = 60.",
+        "Save. PowerShell equivalent: Set-SPOTenant -OrphanedPersonalSitesRetentionPeriod 60.",
+        "Verify: Get-SPOTenant | Select OrphanedPersonalSitesRetentionPeriod — expect 60.",
+        "Note (LOW impact): invisible to active users; this is the offboarding retention window. It is the same tenant setting as 'Deleted user data retention' (two Inforcer objects, one value) — set it once and both verify."
+      ],
+      "docs": "https://learn.microsoft.com/sharepoint/set-retention"
+    },
+    "Deleted user data retention": {
+      "requiredSettings": [
+        { "label": "Days to retain a deleted user's OneDrive", "value": "60 — during this window designated admins can access/transfer the content; after 60 days the OneDrive is permanently deleted" }
+      ],
+      "steps": [
+        "SharePoint admin center > Settings > OneDrive - Retention (same page/setting as the 'OneDrive retention' row).",
+        "Confirm 'Days to retain files in a deleted user's OneDrive' = 60. PowerShell equivalent: Set-SPOTenant -OrphanedPersonalSitesRetentionPeriod 60.",
+        "Verify: Get-SPOTenant | Select OrphanedPersonalSitesRetentionPeriod — expect 60. The clock starts when the account is deleted from Entra ID.",
+        "Note (LOW impact): offboarding-only. Ensure offboarding runbooks retrieve or reassign a departed user's OneDrive within the 60-day window before permanent deletion."
+      ],
+      "docs": "https://learn.microsoft.com/sharepoint/set-retention"
+    },
+    "OneDrive storage quota": {
+      "requiredSettings": [
+        { "label": "Default OneDrive storage limit", "value": "1 TB = 1,048,576 MB (PersonalSiteDefaultStorageLimitInMB / OneDriveStorageQuota = 1048576)" }
+      ],
+      "steps": [
+        "SharePoint admin center > Settings > OneDrive - Storage limit.",
+        "Set the default storage to 1024 GB (1 TB) for all licensed users.",
+        "Save. PowerShell equivalent: Set-SPOTenant -OneDriveStorageQuota 1048576 (to re-apply to an existing user: Set-SPOSite -Identity <OneDrive URL> -StorageQuota 1048576).",
+        "Verify: Get-SPOTenant | Select OneDriveStorageQuota — expect 1048576.",
+        "Note (LOW impact): standard Business Premium/E3/E5 allocation — no user impact for typical use; raise per-user for large-data users. A value above the license cap is rounded down to that cap."
+      ],
+      "docs": "https://learn.microsoft.com/sharepoint/set-default-storage-space"
+    },
+    "Mac OneDrive sync": {
+      "requiredSettings": [
+        { "label": "OneDrive sync app for Mac", "value": "Enabled (IsMacSyncAppEnabled = true) — Mac users can sync normally" }
+      ],
+      "steps": [
+        "SharePoint admin center > Settings > OneDrive - Sync.",
+        "Confirm the OneDrive sync app is allowed for Mac devices (no Mac restriction).",
+        "Verify: Get-SPOTenant | Select IsMacSyncAppEnabled — expect True.",
+        "Note (LOW impact / verify-only): this is an enabler, not a restriction. To restrict OneDrive sync to managed/Intune-enrolled Macs only, use a separate Conditional Access policy targeting the OneDrive sync app rather than changing this toggle."
+      ],
+      "docs": "https://learn.microsoft.com/sharepoint/onedrive-overview"
+    },
+    "Sync file exclusions": {
+      "requiredSettings": [
+        { "label": "File types excluded from OneDrive sync", "value": "None (ExcludedFileExtensionsForSyncClient is empty) — all file types sync normally" }
+      ],
+      "steps": [
+        "SharePoint admin center > Settings > OneDrive - Sync > 'Block upload of specific file types'.",
+        "Confirm no file extensions are listed (baseline state = no exclusions).",
+        "Verify: Get-SPOTenant | Select ExcludedFileExtensionsForSyncClient — expect empty.",
+        "Note (LOW impact / verify-only): to block types later (e.g. pst, iso, exe), Set-SPOTenant -ExcludedFileExtensionsForSyncClient 'pst','iso','exe'. Record the current empty state."
+      ],
+      "docs": "https://learn.microsoft.com/sharepoint/block-file-types-syncing"
+    },
+    "Guest access": {
+      "requiredSettings": [
+        { "label": "Guest user access restrictions (directory)", "value": "Most restrictive — 'restricted to properties and memberships of their own directory objects' (GuestUserRoleID = 10dae51f-b6af-4016-8d66-8c2a99b929b3, Restricted Guest User)" },
+        { "label": "Same control as", "value": "The Entra 'Guest user access restrictions' row (Phase 3) — this is the directory-level guest permission level, surfaced from the M365 admin side" },
+        { "label": "Related M365 Groups guest toggles", "value": "M365 Admin Center > Settings > Org settings > Services > Microsoft 365 Groups: 'Let group owners add people outside your organization…' and 'Let guest group members access group content'" }
+      ],
+      "steps": [
+        "Authoritative control (GuestUserRoleID): Entra ID > Users > User settings > Guest user access restrictions — set to 'Guest user access is restricted to properties and memberships of their own directory objects (most restrictive)'. Save.",
+        "At the row's stated path — M365 Admin Center > Settings > Org settings > Services > Microsoft 365 Groups — review the two guest toggles ('let owners add external people', 'let guest members access group content') and set them to match the client's collaboration posture.",
+        "Verify: PowerShell (Microsoft.Graph) — (Get-MgPolicyAuthorizationPolicy).GuestUserRoleId should be 10dae51f-b6af-4016-8d66-8c2a99b929b3.",
+        "Note (LOW impact): guests get minimal directory visibility (can't enumerate users/groups); no impact on internal users. This intentionally mirrors the Entra External Identities guest restriction — configure once at the directory level and both rows verify."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/users/users-restrict-guest-permissions"
+    }
+  }
+}
