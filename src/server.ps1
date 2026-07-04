@@ -42,6 +42,11 @@ Start-PodeServer -Browse:$Browse {
         Write-PodeFileResponse -Path (Join-Path $env:PLAYBOOK_ROOT 'www' 'index.html')
     }
 
+    # ---- favicon: browsers request /favicon.ico at the root by default ----
+    Add-PodeRoute -Method Get -Path '/favicon.ico' -ScriptBlock {
+        Write-PodeFileResponse -Path (Join-Path $env:PLAYBOOK_ROOT 'www' 'favicon.ico') -ContentType 'image/x-icon'
+    }
+
     # ---- config: playbooks for New Engagement form ----
     Add-PodeRoute -Method Get -Path '/api/config' -ScriptBlock {
         $cfg = Get-PlaybookConfig
