@@ -1,0 +1,78 @@
+{
+  "meta": {
+    "tier": "Tier0",
+    "section": "Entra — Authentication (Methods / Strengths / Password Reset)",
+    "source": "Microsoft Learn (learn.microsoft.com/entra/identity/authentication) — admin-center paths, controls, and enforcement model grounded via the Microsoft Learn MCP on 2026-07-03.",
+    "generalNotes": [
+      "Manage these in the Microsoft Entra admin center (entra.microsoft.com) with at least the Authentication Policy Administrator role (SSPR properties, registration campaign, auth strengths). Conditional Access / Security Defaults changes need the Conditional Access Administrator role.",
+      "Legacy MFA and SSPR method management is retired — since Sept 30 2025 authentication methods live only in Entra ID > Protection > Authentication methods. Configure methods there, not in the old MFA/SSPR service-settings pages.",
+      "The Tier0 'Password Protection' row is intentionally not duplicated here: it shares the exact policy name of the Tier1 entry, so it already inherits that guidance (global banned-password list + smart lockout). Verify only — don't add a second key."
+    ]
+  },
+  "policies": {
+    "Multifactor authentication": {
+      "requiredSettings": [
+        { "label": "How tenant-wide MFA is actually enforced", "value": "There is no single 'require MFA for all' toggle in the Authentication methods blade. Enforce it with a Conditional Access policy 'Require MFA for all users' (Business Premium includes Entra ID P1). If you have no P1, use Security Defaults instead — the two are mutually exclusive." },
+        { "label": "Authentication methods > Settings — System-preferred MFA", "value": "Enabled (prompts each user for their most secure registered method)" },
+        { "label": "Authentication methods > Settings — Report suspicious activity", "value": "Enabled (lets users flag rogue MFA prompts; feeds Identity Protection)" }
+      ],
+      "steps": [
+        "Confirm the enforcement layer first: in Entra ID > Overview > Properties > Manage security defaults, Security Defaults should be Disabled when you use Conditional Access (leave it Enabled only for a P1-less tenant).",
+        "Create/verify the CA policy: Entra ID > Protection > Conditional Access > Policies > New policy — Users = All users, Exclude = break-glass/emergency accounts (and Directory Synchronization Accounts if hybrid); Target resources = All resources; Grant = Require multifactor authentication (or Require authentication strength > Multifactor authentication).",
+        "Set the policy to Report-only, review the sign-in impact, then switch it to On.",
+        "In Entra ID > Protection > Authentication methods > Settings: set System-preferred MFA = Enabled and Report suspicious activity = Enabled (target All users).",
+        "Verify: run a test sign-in for a non-excluded user and confirm an MFA prompt; check Sign-in logs show the CA policy applied. Break-glass accounts must stay excluded and be covered by a separate monitored control.",
+        "Note (HIGH impact): every user without a registered method is forced to enroll on next sign-in — stage with communications and a registration campaign, and always exclude emergency-access accounts before switching from Report-only to On."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/conditional-access/policy-all-users-mfa-strength"
+    },
+    "System-preferred MFA": {
+      "requiredSettings": [
+        { "label": "Control (per the portal path / description)", "value": "The MFA Registration campaign — Entra ID > Protection > Authentication methods > Registration campaign — that nudges users to set up Microsoft Authenticator during sign-in." },
+        { "label": "State", "value": "Enabled" },
+        { "label": "Authentication method to nudge", "value": "Microsoft Authenticator" },
+        { "label": "Days allowed to snooze", "value": "1 (optionally cap total snoozes via enforceRegistrationAfterAllowedSnoozes so setup becomes mandatory)" }
+      ],
+      "steps": [
+        "Entra ID > Protection > Authentication methods > Registration campaign.",
+        "Set State = Enabled, Method to nudge = Microsoft Authenticator, and Target = All users (exclude break-glass accounts).",
+        "Set Days allowed to snooze = 1; to force setup, enable a limited number of snoozes (enforceRegistrationAfterAllowedSnoozes) rather than unlimited.",
+        "Save.",
+        "Verify: a targeted user without Authenticator sees the 'Set up Authenticator' nudge after their next MFA event; existing Authenticator users are unaffected.",
+        "Note: this row is named 'System-preferred MFA' but its portal path and description configure the registration campaign. System-preferred MFA itself is the separate Authentication methods > Settings toggle (covered under the 'Multifactor authentication' row) that auto-selects each user's strongest method — keep that Enabled too."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/authentication/how-to-mfa-registration-campaign"
+    },
+    "Inforcer - Authentication": {
+      "requiredSettings": [
+        { "label": "Type", "value": "Custom authentication strength policy" },
+        { "label": "Allowed method combinations", "value": "Phishing-resistant / strong MFA only: Windows Hello for Business, FIDO2 security key, device-bound Authenticator (phone sign-in), Temporary Access Pass (one-time), Microsoft Authenticator push, software OATH, hardware OATH — per the baseline" },
+        { "label": "Consumed by", "value": "Conditional Access policies that require elevated assurance (notably the admin-MFA CA policy) — this definition has no effect on its own" }
+      ],
+      "steps": [
+        "Entra ID > Protection > Authentication methods > Authentication strengths > New authentication strength.",
+        "Name it (e.g. 'Inforcer - Authentication'), then tick the allowed method combinations for the baseline (phishing-resistant + strong methods listed above).",
+        "Save — it then appears as a Grant control option ('Require authentication strength') in Conditional Access.",
+        "Point the admin-MFA CA policy (e.g. 'Core - Allow - MFA for Admins') at this strength and confirm it's On.",
+        "Verify: the strength shows Read Only = False (editable) and is referenced by at least one active CA policy; an admin sign-in is challenged for a compliant method. No end-user impact comes from the definition alone — it's delivered through the CA policy that consumes it."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/authentication/concept-authentication-strengths"
+    },
+    "Self-service password reset": {
+      "requiredSettings": [
+        { "label": "Self-service password reset enabled", "value": "All (production) — or a pilot group via Selected. Baseline intent is ENABLED; the row notes the tenant currently has it Disabled." },
+        { "label": "Number of methods required to reset", "value": "1 or 2 (2 raises assurance; keep methods-to-register at least one higher)" },
+        { "label": "Methods available to users", "value": "Microsoft Authenticator (app notification/code), Mobile phone, Email — align with the enabled Authentication methods" },
+        { "label": "Require users to register when signing in", "value": "Yes; reconfirm authentication info every 90–180 days" }
+      ],
+      "steps": [
+        "Entra ID > Protection > Password reset > Properties: set 'Self-service password reset enabled' to All (or Selected for a pilot group), then Save.",
+        "On the Authentication methods page: set 'Number of methods required to reset' (1 or 2) and tick the methods available to users (Authenticator, Mobile phone, Email).",
+        "On the Registration page: set 'Require users to register when signing in' = Yes and reconfirmation to 90–180 days; Save.",
+        "Verify: register a non-admin test user at https://aka.ms/ssprsetup, then reset at https://aka.ms/sspr; the account resets without helpdesk involvement. (Admins always require two methods to reset.)",
+        "Note (HIGH impact): enabling SSPR is the intended secure self-recovery path alongside required MFA — with it disabled, every lockout becomes a helpdesk ticket. This SSPR capability is distinct from 'SelfServicePassConfig' (which blocks external self-service sign-up to the tenant) — don't conflate them."
+      ],
+      "docs": "https://learn.microsoft.com/entra/identity/authentication/tutorial-enable-sspr"
+    }
+  }
+}
