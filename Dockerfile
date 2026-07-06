@@ -26,10 +26,17 @@ RUN pwsh -NoProfile -Command "\
 
 WORKDIR /app
 # Only what the app needs at runtime (see .dockerignore for what's excluded).
+# The masters are copied twice: data/masters is the live location (auto-seeds
+# fresh NAMED volumes), seed-data/masters is a pristine reference the
+# entrypoint copies from when a BIND MOUNT leaves the live folder empty —
+# Docker never seeds bind mounts itself.
 COPY src/                  ./src/
 COPY www/                  ./www/
 COPY data/masters/         ./data/masters/
+COPY data/masters/         ./seed-data/masters/
 COPY Start-PlaybookApp.ps1 ./
+COPY docker-entrypoint.sh  /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # 0.0.0.0 so the published port is reachable from the host; CHROME_BIN points
 # Find-HeadlessBrowser straight at Chromium. Override TZ in compose so the
@@ -42,12 +49,13 @@ ENV PLAYBOOK_PORT=3020 \
 EXPOSE 3020
 
 # Saved client work, generated reports, and the (editable) master playbooks.
-# A fresh named volume mounted at data/masters is auto-seeded from the image.
+# Named volumes auto-seed from the image; bind mounts are seeded by the
+# entrypoint (see docker-entrypoint.sh).
 VOLUME ["/app/data/clients", "/app/reports", "/app/data/masters"]
 
 # Pode takes ~10s to bind — give the healthcheck a start grace period.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=25s --retries=3 \
   CMD pwsh -NoProfile -Command "try { Invoke-WebRequest -UseBasicParsing http://127.0.0.1:3020/api/state -TimeoutSec 3 | Out-Null; exit 0 } catch { exit 1 }"
 
-ENTRYPOINT ["/usr/bin/tini", "--"]
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/docker-entrypoint.sh"]
 CMD ["pwsh", "-NoProfile", "-File", "src/server.ps1", "-Port", "3020"]
