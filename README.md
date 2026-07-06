@@ -19,7 +19,7 @@ and hand over a polished status report — all from a local web app.
 
 ## ✨ Highlights
 
-- 🗂️ **Two playbooks** per engagement — Inforcer **Tier 1** (deployment) and **Tier 0** (verification).
+- 🗂️ **Three playbooks** — Inforcer **Tier 1** (deployment), **Tier 0** (verification), and **Baseline Email Security** (verification).
 - 🎨 **Impact-coded meeting view** — policies grouped by section and colour-coded **HIGH / MEDIUM / LOW**, each card showing *what it does* and a *what users will experience* box.
 - 🔎 **Impact filter & search** — jump straight to the "users will notice this" items to pre-brief clients.
 - 📊 **Live tracking** — Status / Date / Tech / Notes per policy, with overall and per-section progress rings that update as you go.
@@ -37,7 +37,8 @@ and hand over a polished status report — all from a local web app.
 | Playbook | Purpose | Size |
 |---|---|---|
 | **Inforcer Tier 1** | Foundation Baseline — deployment checklist | 122 policies |
-| **Inforcer Tier 0** | Baseline 0 — verification | ~48 policies |
+| **Inforcer Tier 0** | Baseline 0 — verification | 48 policies |
+| **Inforcer Baseline Email Security** | Email security baseline — verification | 32 policies |
 
 The master workbooks in `data/masters/` are the **source of truth** and are never modified — a fresh copy is made for each client on first save.
 
@@ -70,27 +71,25 @@ A containerized install that bundles PowerShell, the modules, and Chromium (so *
 served on **port 3020**. Managed entirely with **Docker Compose** — no `docker run` incantations to
 remember.
 
-Clone (or copy) the repo so you have the `Dockerfile` and `docker-compose.yml`, then from that folder:
+**Option A — pull the prebuilt image (recommended).** The image is **public** on
+[GHCR](https://ghcr.io) — no GitHub account, token, or `docker login`, and no repo checkout:
+a single `docker-compose.yml` is all the host needs. Save the file below, then:
 
 ```bash
-docker compose up -d --build     # build the image from source and start it
-                                 # → then browse to http://localhost:3020
+docker compose pull && docker compose up -d   # → then browse to http://localhost:3020
 ```
 
-Building from source needs **no registry login**. To pull the prebuilt image instead, see below.
-
 <details>
-<summary><strong>📄 docker-compose.yml</strong></summary>
+<summary><strong>📄 docker-compose.yml</strong> (server deploy — no repo checkout needed)</summary>
 
 ```yaml
 services:
   playbook:
     image: ghcr.io/anthonyjohnsonga/m365-policy-playbook:latest
-    build: .                       # build locally from the Dockerfile (docker compose up --build)
     container_name: m365-policy-playbook
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3020:3020"      # host loopback only (use a VPN / SSH tunnel for remote)
+      - "127.0.0.1:3020:3020"      # host loopback only — see "Network exposure" below
     environment:
       TZ: America/New_York         # your timezone, so overdue / due-soon dates are correct
     volumes:
@@ -103,27 +102,63 @@ volumes:
   reports:
   masters:
 ```
+
+<sub>Maintainer note: repo visibility and GHCR **package** visibility are set independently —
+if anonymous pulls fail after a fork/republish, set the package itself to Public
+(GitHub → Packages → the image → Package settings → Danger Zone).</sub>
 </details>
 
-<details>
-<summary><strong>Prefer the prebuilt image instead of building?</strong></summary>
-
-The image is **private** on GHCR, so log in once with a GitHub token that has the
-`read:packages` scope, then pull rather than build:
+**Option B — build from source.** Clone the repo (you need the `Dockerfile` and the repo's
+`docker-compose.yml`, which adds a `build: .` line), then from that folder:
 
 ```bash
-docker login ghcr.io -u <your-github-username>   # paste a Personal Access Token as the password
-docker compose pull && docker compose up -d      # then browse to http://localhost:3020
+docker compose up -d --build     # build the image locally and start it
 ```
-</details>
 
 **Everyday Compose commands:**
 
 ```bash
-docker compose up -d --build   # rebuild after pulling new code, then (re)start
-docker compose logs -f         # watch the server log
-docker compose down            # stop (your data/volumes are kept)
+docker compose pull && docker compose up -d   # update to the newest image (Option A)
+docker compose up -d --build                  # rebuild after pulling new code (Option B)
+docker compose logs -f                        # watch the server log
+docker compose down                           # stop (your data is kept)
 ```
+
+#### 🔐 Network exposure — pick deliberately
+
+The app has **no login**: whoever can reach port 3020 can read and edit your engagement data.
+The `ports:` line decides who that is:
+
+| `ports:` value | Reachable from |
+|---|---|
+| `"127.0.0.1:3020:3020"` | the Docker host only (default — use an SSH tunnel for remote) |
+| `"100.x.y.z:3020:3020"` | your tailnet only — bind to the host's Tailscale/VPN IP |
+| `"3020:3020"` | **every network the host is on** — pair it with a firewall rule |
+
+If you bind to all interfaces but only want VPN access, scope it with the host firewall, e.g.
+allow just the Tailscale range:
+
+```bash
+sudo ufw allow from 100.64.0.0/10 to any port 3020 proto tcp
+sudo ufw deny 3020/tcp
+```
+
+#### 📁 Prefer host folders over named volumes?
+
+Swap the `volumes:` section for bind mounts (and drop the named-volume block at the bottom):
+
+```yaml
+    volumes:
+      - /srv/playbook/clients:/app/data/clients
+      - /srv/playbook/reports:/app/reports
+      - /srv/playbook/masters:/app/data/masters
+```
+
+- Create the folders first: `mkdir -p /srv/playbook/{clients,reports,masters}`.
+- The master playbooks **auto-seed on startup** — the entrypoint copies any missing master
+  into an empty (or partial) `masters` folder, so bind mounts work out of the box.
+- The container currently runs as root, so files it creates are `root:root` on the host.
+  To manage them as your own user: `sudo chown -R $(whoami): /srv/playbook`.
 
 > ⚠️ The app has **no login** and holds **one active engagement** at a time — keep it on
 > `localhost` / VPN and treat it as a single-operator tool. Full guide: **[SETUP.md §14](SETUP.md)**.
@@ -160,6 +195,7 @@ Launch.command            One-click launcher for macOS
 Start-PlaybookApp.ps1     Dependency check, then starts the server
 Dockerfile                Container image (PowerShell + Chromium + modules)
 docker-compose.yml        Container run config (port 3020, named volumes)
+docker-entrypoint.sh      Seeds missing master playbooks at startup (bind mounts)
 src/
   server.ps1              Pode routes (pages + JSON API); opens browser when ready
   DataAccess.ps1          Load / normalize playbooks, Excel save/load, summary
@@ -179,7 +215,7 @@ reports/                  Generated report files (Excel / PDF)
 ## 🗃️ Data & version control
 
 - **`data/clients/`** (client working files) and **`reports/`** (generated output) are excluded via `.gitignore` and **never committed** — only the app code and the read-only master playbooks are tracked.
-- **Self-initializing:** a fresh `git clone` or ZIP won't contain those folders — the app **creates them on first run**. Just clone/extract and run. (In Docker, this data lives in the named volumes.)
+- **Self-initializing:** a fresh `git clone` or ZIP won't contain those folders — the app **creates them on first run**. Just clone/extract and run. (In Docker, this data lives in the named volumes or bind mounts.)
 
 ---
 

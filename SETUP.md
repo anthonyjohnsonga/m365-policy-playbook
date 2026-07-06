@@ -74,7 +74,7 @@ Copy the whole **`Microsoft Web App`** folder to the new machine. Good places:
 You can transfer it by USB drive, OneDrive/SharePoint, or a network share —
 anything that moves a folder. Copying the folder also brings:
 
-- `data\masters\` — the two master playbooks (Tier 1 and Tier 0).
+- `data\masters\` — the master playbooks (Tier 1, Tier 0, Email Security).
 - `data\clients\` — any saved client engagements (so in-progress work travels too).
 
 > **Getting it from GitHub instead?** A `git clone` or ZIP download will **not**
@@ -341,25 +341,24 @@ NAS, or VM. The image bundles PowerShell, the helper modules, and Chromium (so
 ### Prerequisites
 - A Linux host with **Docker** and the **Docker Compose** plugin
   (`docker compose version` should print a version).
-- The repo files on that host — at minimum the **`Dockerfile`** and
-  **`docker-compose.yml`** (a `git clone` or a copy of the folder). Everything
-  below is run from the folder that contains `docker-compose.yml`.
-
-Building the image from source (the recommended path below) needs **no registry
-login**. You only need a GitHub token if you'd rather pull the prebuilt private
-image — see the note after step 2.
+- A **`docker-compose.yml`** on that host. That's genuinely all: the prebuilt
+  image is **public** on GHCR, so pulling it needs no GitHub account, token, or
+  `docker login`. Only building from source needs the full repo (`git clone` or
+  a copy of the folder, for the `Dockerfile`). Everything below is run from the
+  folder that contains `docker-compose.yml`.
 
 ### 1. Review the compose file
-The repo ships a ready-to-use **`docker-compose.yml`**. Open it and set **`TZ`**
-to your timezone (so overdue / due-soon dates are correct). It publishes the app
-on the host loopback only (`127.0.0.1:3020`) and stores your data in three named
+The repo ships a ready-to-use **`docker-compose.yml`** — or copy the block below
+onto the host if you're not cloning the repo. Open it and set **`TZ`** to your
+timezone (so overdue / due-soon dates are correct). It publishes the app on the
+host loopback only (`127.0.0.1:3020`) and stores your data in three named
 volumes — you normally don't need to change anything else:
 
 ```yaml
 services:
   playbook:
     image: ghcr.io/anthonyjohnsonga/m365-policy-playbook:latest
-    build: .                       # build locally from the Dockerfile
+    build: .                       # only used by `up --build`; delete if you pull the image
     container_name: m365-policy-playbook
     restart: unless-stopped
     ports:
@@ -377,28 +376,26 @@ volumes:
   masters:
 ```
 
-### 2. Build and start it
-From the folder with `docker-compose.yml`:
+### 2. Start it
+From the folder with `docker-compose.yml` — quickest is pulling the prebuilt
+image (public on GHCR, no login):
+```bash
+docker compose pull && docker compose up -d
+```
+
+Or, if you cloned the repo and want to build from source (e.g. you've modified
+the code):
 ```bash
 docker compose up -d --build
 ```
 This builds the image from the `Dockerfile` (PowerShell + modules + Chromium),
-creates the volumes, and starts the container in the background. Re-run the same
-command any time you pull new code to rebuild and restart.
-
-> **Prefer the prebuilt image instead of building?** It's **private** on GHCR, so
-> get a **GitHub Personal Access Token** with the `read:packages` scope (GitHub →
-> Settings → Developer settings → Personal access tokens → *Tokens (classic)* →
-> tick **read:packages**), then:
-> ```bash
-> docker login ghcr.io -u <your-github-username>   # paste the token as the password
-> docker compose pull && docker compose up -d
-> ```
+creates the volumes, and starts the container in the background.
 
 ### 3. Open it
 Browse to **http://localhost:3020** *on the server* (it's published to the host
 loopback only). To reach it from another machine use an **SSH tunnel** or a
-**VPN** — don't expose 3020 to the network, since there's no authentication.
+**VPN** — don't expose 3020 to the network casually, since there's no
+authentication (see *Notes & gotchas* below for tailnet/LAN binding options).
 
 ### Your data (named volumes)
 Saved work lives in three Compose-managed volumes, so it survives restarts,
@@ -421,16 +418,34 @@ To **back up** a volume, archive it by its real name, e.g.:
 docker run --rm -v <folder>_clients:/data -v "$PWD":/backup alpine \
   tar czf /backup/clients-backup.tgz -C /data .
 ```
-(Prefer files you can see directly on the host? Swap the named volumes for bind
-mounts to host folders in `docker-compose.yml`.)
+### Prefer files you can see directly on the host? (bind mounts)
+Swap the named volumes for host folders in `docker-compose.yml` (and delete the
+`volumes:` block at the bottom):
+
+```yaml
+    volumes:
+      - /srv/playbook/clients:/app/data/clients
+      - /srv/playbook/reports:/app/reports
+      - /srv/playbook/masters:/app/data/masters
+```
+
+- **Create the folders first:** `mkdir -p /srv/playbook/{clients,reports,masters}`
+  (use any path you like — adjust the left side of each mapping to match).
+- **The masters seed themselves:** on startup the container copies any missing
+  master playbook into an empty `masters` folder, so a fresh bind mount works
+  without any manual copying.
+- **Ownership:** the container runs as root, so files it creates show up as
+  `root:root` on the host. To manage them as your own user:
+  `sudo chown -R $(whoami): /srv/playbook` — the app keeps working either way.
 
 ### Common commands
 Run these from the folder with `docker-compose.yml`:
 ```bash
-docker compose up -d --build     # rebuild from source, then (re)start
-docker compose logs -f           # watch the server log
-docker compose restart           # restart without rebuilding
-docker compose down              # stop (data/volumes are kept)
+docker compose pull && docker compose up -d   # update to the newest prebuilt image
+docker compose up -d --build                  # rebuild from source, then (re)start
+docker compose logs -f                        # watch the server log
+docker compose restart                        # restart without rebuilding
+docker compose down                           # stop (data/volumes are kept)
 ```
 
 ### Notes & gotchas
@@ -439,12 +454,23 @@ docker compose down              # stop (data/volumes are kept)
   3020 inside the container. Re-run `docker compose up -d` to apply.
 - **Timezone:** set `TZ` in the compose file to your zone so the overdue /
   due-soon dates match your locale instead of UTC.
-- **Master updates:** because the `masters` volume is persisted, a rebuilt or
-  newer image's updated baseline masters won't overwrite an existing masters
-  volume — edit masters via the app, or reset just that volume to pick up the
-  image's copy.
-- **Pick up new code:** after `git pull` (or copying in newer files), re-run
-  `docker compose up -d --build` to rebuild the image and restart.
+- **Reaching it from other machines:** the default `127.0.0.1:3020:3020` is
+  loopback-only — remember there's **no login**, so widen access deliberately.
+  Tailnet/VPN only: bind to the host's VPN IP (`"100.x.y.z:3020:3020"`). Whole
+  LAN: `"3020:3020"`, ideally scoped with a firewall rule, e.g. allow just the
+  Tailscale range:
+  ```bash
+  sudo ufw allow from 100.64.0.0/10 to any port 3020 proto tcp
+  sudo ufw deny 3020/tcp
+  ```
+- **Master updates:** a newer image never overwrites masters you already have —
+  in-app *Manage master* edits are safe across updates. It **does** add any
+  master that's missing, so a brand-new playbook shipped in an update appears
+  automatically. To reset one master to the image's pristine copy, delete that
+  file from the volume/folder and restart the container.
+- **Pick up a new version:** `docker compose pull && docker compose up -d`
+  (prebuilt image), or after `git pull` re-run `docker compose up -d --build`
+  (built from source).
 
 ---
 
