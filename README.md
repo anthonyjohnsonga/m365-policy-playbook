@@ -157,8 +157,10 @@ Swap the `volumes:` section for bind mounts (and drop the named-volume block at 
 - Create the folders first: `mkdir -p /srv/playbook/{clients,reports,masters}`.
 - The master playbooks **auto-seed on startup** — the entrypoint copies any missing master
   into an empty (or partial) `masters` folder, so bind mounts work out of the box.
-- The container currently runs as root, so files it creates are `root:root` on the host.
-  To manage them as your own user: `sudo chown -R $(whoami): /srv/playbook`.
+- The server runs as an unprivileged user, **UID/GID 1000:1000** — a root startup phase
+  seeds the masters and chowns the mounted data folders to that user, then drops privileges.
+  On most Linux hosts the first user *is* UID 1000, so the files end up owned by you; if
+  your user has a different UID, use `sudo` for host-side file management.
 
 > ⚠️ The app has **no login** and holds **one active engagement** at a time — keep it on
 > `localhost` / VPN and treat it as a single-operator tool. Full guide: **[SETUP.md §14](SETUP.md)**.
@@ -195,7 +197,7 @@ Launch.command            One-click launcher for macOS
 Start-PlaybookApp.ps1     Dependency check, then starts the server
 Dockerfile                Container image (PowerShell + Chromium + modules)
 docker-compose.yml        Container run config (port 3020, named volumes)
-docker-entrypoint.sh      Seeds missing master playbooks at startup (bind mounts)
+docker-entrypoint.sh      Startup: seeds missing masters, drops root → appuser
 src/
   server.ps1              Pode routes (pages + JSON API); opens browser when ready
   DataAccess.ps1          Load / normalize playbooks, Excel save/load, summary

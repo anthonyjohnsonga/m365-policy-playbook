@@ -302,7 +302,8 @@ function Export-ReportPdf {
     # means no window appears, so -WindowStyle Hidden (Windows-only, unsupported
     # on macOS) is no longer needed.
     $chromeArgs = @('--headless','--disable-gpu','--no-pdf-header-footer')
-    # In a container Chromium runs as root with a tiny /dev/shm; these flags are
+    # In a container Chromium has no usable sandbox (no privileged helper, no
+    # unprivileged user namespaces) and a tiny /dev/shm; these flags are
     # required there and only apply on Linux.
     if ($IsLinux) { $chromeArgs += '--no-sandbox','--disable-dev-shm-usage' }
     $chromeArgs += "--print-to-pdf=$OutPath", $fileUri

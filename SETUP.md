@@ -434,9 +434,11 @@ Swap the named volumes for host folders in `docker-compose.yml` (and delete the
 - **The masters seed themselves:** on startup the container copies any missing
   master playbook into an empty `masters` folder, so a fresh bind mount works
   without any manual copying.
-- **Ownership:** the container runs as root, so files it creates show up as
-  `root:root` on the host. To manage them as your own user:
-  `sudo chown -R $(whoami): /srv/playbook` — the app keeps working either way.
+- **Ownership:** the server runs as an unprivileged user, **UID/GID 1000:1000**.
+  On startup a brief root phase chowns the mounted data folders to that user
+  and then drops privileges. Most Linux hosts give their first user UID 1000,
+  so the files usually end up owned by *you*; if your account has a different
+  UID, use `sudo` for host-side file management — the app works either way.
 
 ### Common commands
 Run these from the folder with `docker-compose.yml`:

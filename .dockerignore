@@ -1,5 +1,5 @@
 # Keep the build context lean — the image only needs src/, www/,
-# data/masters/, Start-PlaybookApp.ps1, and docker-entrypoint.sh.
+# data/masters/, data/guidance/, Start-PlaybookApp.ps1, and docker-entrypoint.sh.
 .git
 .github
 .claude
