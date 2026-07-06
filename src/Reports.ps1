@@ -190,15 +190,15 @@ function Export-ReportExcel {
             [pscustomobject]@{ Metric='Not enrolled';         Value=$dev.notEnrolled }
         ) | ForEach-Object { $summaryRows.Add($_) }
     }
-    $summaryRows | Export-Excel -Path $OutPath -WorksheetName 'Summary' -AutoSize -TitleBold -Title "$($Engagement.ClientName) - Status Summary"
+    $summaryRows | Export-Excel -Path $OutPath -WorksheetName 'Summary' -TitleBold -Title "$($Engagement.ClientName) - Status Summary"
 
     $sum.Sections | Select-Object Section,Done,Total,@{n='% Done';e={$_.Pct}} |
-        Export-Excel -Path $OutPath -WorksheetName 'By Section' -AutoSize -TableStyle Medium2
+        Export-Excel -Path $OutPath -WorksheetName 'By Section' -TableStyle Medium2
 
     $Engagement.Policies | Where-Object { $_.ImpactClass -in 'high','medium' } |
         Select-Object @{n='Impact';e={$_.Impact}}, Section, PolicyName,
                       @{n='What Users Will Experience';e={$_.WhatUsersExperience}}, Status |
-        Export-Excel -Path $OutPath -WorksheetName 'Impact Briefing' -AutoSize -TableStyle Medium2
+        Export-Excel -Path $OutPath -WorksheetName 'Impact Briefing' -TableStyle Medium2
 
     $Engagement.Policies |
         Select-Object Id,Section,PolicyName,Impact,Status,
@@ -206,7 +206,7 @@ function Export-ReportExcel {
                       @{n='Completed Date';e={$_.DateCompleted}},Tech,
                       @{n='What It Does';e={$_.WhatItDoes}},
                       @{n='Portal Path';e={$_.PortalPath}},Notes |
-        Export-Excel -Path $OutPath -WorksheetName 'Full Status' -AutoSize -TableStyle Light1 -FreezeTopRow
+        Export-Excel -Path $OutPath -WorksheetName 'Full Status' -TableStyle Light1 -FreezeTopRow
 
     if ($dev.total) {
         @($Engagement.Devices) |
@@ -214,8 +214,19 @@ function Export-ReportExcel {
                           @{n='Current';e={$_.Current}},
                           @{n='At Goal';e={ if ($_.Current -eq $dev.target) { 'Yes' } else { '' } }},
                           Status,Notes |
-            Export-Excel -Path $OutPath -WorksheetName 'Devices' -AutoSize -TableStyle Medium2 -FreezeTopRow
+            Export-Excel -Path $OutPath -WorksheetName 'Devices' -TableStyle Medium2 -FreezeTopRow
     }
+
+    # Size every sheet's columns in one pass (-AutoSize is unusable here: it
+    # needs System.Drawing, gone from .NET 8 on Linux/macOS - see
+    # Set-ColumnWidthByContent in DataAccess.ps1).
+    $pkg = Open-ExcelPackage -Path $OutPath
+    try {
+        foreach ($ws in $pkg.Workbook.Worksheets) { Set-ColumnWidthByContent $ws }
+        Close-ExcelPackage $pkg
+    }
+    catch { Close-ExcelPackage $pkg -NoSave; throw }
+
     $OutPath
 }
 

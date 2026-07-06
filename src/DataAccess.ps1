@@ -111,6 +111,32 @@ function ConvertTo-SafeClientName {
     $Name -replace '[^\w\-]', '_'
 }
 
+# --- Column sizing without System.Drawing -------------------------------------
+#  EPPlus AutoFitColumns() (and ImportExcel's -AutoSize) measure text via
+#  System.Drawing.Common, which .NET 8 removed on Linux/macOS - it throws
+#  "The type initializer for 'Gdip' threw an exception" and aborts the whole
+#  save/export. Approximate the fit from character counts instead; Excel column
+#  width is roughly one character of the default font per unit.
+function Set-ColumnWidthByContent {
+    param(
+        [Parameter(Mandatory)]$Worksheet,
+        [int]$MinWidth = 8,
+        [int]$MaxWidth = 60
+    )
+    if (-not $Worksheet.Dimension) { return }
+    for ($c = $Worksheet.Dimension.Start.Column; $c -le $Worksheet.Dimension.End.Column; $c++) {
+        $max = 0
+        for ($r = $Worksheet.Dimension.Start.Row; $r -le $Worksheet.Dimension.End.Row; $r++) {
+            $text = $Worksheet.Cells[$r, $c].Text
+            if (-not $text) { continue }
+            foreach ($line in $text -split "`n") {   # size multi-line cells to their longest line
+                if ($line.Length -gt $max) { $max = $line.Length }
+            }
+        }
+        $Worksheet.Column($c).Width = [Math]::Max($MinWidth, [Math]::Min($MaxWidth, $max + 2))
+    }
+}
+
 # --- Impact normalization ----------------------------------------------------
 function ConvertTo-ImpactClass {
     param([string]$Impact)
@@ -541,7 +567,7 @@ function Save-Engagement {
             $dws.Cells[$dr,7].Value = $dev.Notes
             $dr++
         }
-        $dws.Cells[$dws.Dimension.Address].AutoFitColumns()
+        Set-ColumnWidthByContent $dws
 
         Close-ExcelPackage $pkg
     }
