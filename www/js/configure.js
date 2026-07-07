@@ -5,7 +5,7 @@
    portal. Check state is IN-SESSION ONLY: it's rebuilt fresh on each open and
    cleared when the modal closes — the policy's Status field stays the source of
    truth for "done". */
-import { $, $$, enc } from './dom.js';
+import { $, $$, enc, wireModal } from './dom.js';
 import { state } from './state.js';
 import { statusClass } from './format.js';
 
@@ -41,14 +41,9 @@ export function hasGuidance(p){
 }
 
 export function initConfigure(){
-  const overlay = $('#configOverlay');
-  if(!overlay) return;
-  const close = () => overlay.classList.add('hidden');
-  $('#configClose').onclick = close;
-  overlay.onclick = e => { if(e.target === overlay) close(); };
-  document.addEventListener('keydown', e => {
-    if(e.key === 'Escape' && !overlay.classList.contains('hidden')) close();
-  });
+  // openConfigure renders its content first and unhides the overlay itself,
+  // so only the close behaviors are needed here.
+  wireModal('#configOverlay', '#configClose');
 }
 
 export function openConfigure(id){

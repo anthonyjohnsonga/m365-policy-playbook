@@ -1,21 +1,16 @@
 /* import.js — bring working files saved by another install into data/clients.
    One POST per file (multipart), so each file gets its own success/error line
    and one bad workbook never blocks the rest of the batch. */
-import { $, enc } from './dom.js';
+import { $, enc, wireModal } from './dom.js';
 import { api, toast } from './api.js';
 
 let _onImported = null;   // app.js callback: refresh the saved-files dropdown
 
 export function initImport(onImported){
   _onImported = onImported;
-  const overlay = $('#importOverlay');
-  const open  = () => { overlay.classList.remove('hidden'); resetImport(); loadImportClients(); };
-  const close = () => overlay.classList.add('hidden');
+  const modal = wireModal('#importOverlay', '#importClose', () => { resetImport(); loadImportClients(); });
   const btn = $('#btnImport');
-  if(btn) btn.onclick = open;
-  $('#importClose').onclick = close;
-  overlay.onclick = e => { if(e.target===overlay) close(); };
-  document.addEventListener('keydown', e => { if(e.key==='Escape' && !overlay.classList.contains('hidden')) close(); });
+  if(btn) btn.onclick = modal.open;
   // "New client…" reveals a free-text box (same pattern as the master modal).
   $('#impClient').onchange = e => {
     const isNew = e.target.value === '__new__';
@@ -40,7 +35,10 @@ async function loadImportClients(){
     const c = await api('/api/clients');
     const names = [...new Set(c.files.map(f => f.client).filter(Boolean))].sort();
     if(names.length){
-      sel.innerHTML = names.map(n => `<option value="${enc(n)}">${enc(n)}</option>`).join('')
+      // Placeholder first, so a hasty Import can't silently target whichever
+      // client happens to sort first.
+      sel.innerHTML = '<option value="">&mdash; Pick a client &mdash;</option>'
+        + names.map(n => `<option value="${enc(n)}">${enc(n)}</option>`).join('')
         + '<option value="__new__">&#10133; New client&hellip;</option>';
     }
   }catch(e){ toast(e.message, true); }

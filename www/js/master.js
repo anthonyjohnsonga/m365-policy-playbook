@@ -1,18 +1,13 @@
 /* master.js — admin: add a policy to the Tier 1 master playbook */
-import { $, enc } from './dom.js';
+import { $, enc, wireModal } from './dom.js';
 import { api, toast } from './api.js';
 
 let _masterNames = [];
 
 export function initMaster(){
-  const overlay = $('#masterOverlay');
-  const open  = () => { overlay.classList.remove('hidden'); loadMasterMeta(); };
-  const close = () => overlay.classList.add('hidden');
+  const modal = wireModal('#masterOverlay', '#masterClose', loadMasterMeta);
   const btn = $('#btnMaster');
-  if(btn) btn.onclick = open;
-  $('#masterClose').onclick = close;
-  overlay.onclick = e => { if(e.target===overlay) close(); };
-  document.addEventListener('keydown', e => { if(e.key==='Escape' && !overlay.classList.contains('hidden')) close(); });
+  if(btn) btn.onclick = modal.open;
   // "New section…" reveals a free-text box.
   $('#mSection').onchange = e => {
     const isNew = e.target.value === '__new__';
