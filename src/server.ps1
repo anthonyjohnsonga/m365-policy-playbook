@@ -206,7 +206,13 @@ Start-PodeServer -Browse:$Browse {
                 policies=$res.Policies; replaced=@($res.Replaced); closedActive=$closedActive
             }
         }
-        catch { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error="$($_.Exception.Message)" } }
+        catch {
+            # ArgumentException = the uploaded file is at fault (400); anything
+            # else is a server-side failure and must not masquerade as one.
+            $code = if ($_.Exception -is [System.ArgumentException]) { 400 } else { 500 }
+            Set-PodeResponseStatus -Code $code -NoErrorPage
+            Write-PodeJsonResponse -Value @{ error="$($_.Exception.Message)" }
+        }
         finally { Remove-Item -Path $tmp -Force -ErrorAction SilentlyContinue }
     }
 

@@ -597,13 +597,15 @@ function Import-ClientFile {
         [string]$OriginalName = ''
     )
     # Surface the uploaded file's name in errors, not the staging temp path.
+    # Bad-upload problems throw ArgumentException so the API route can answer
+    # 400 (caller's file is at fault) vs 500 (server-side fault).
     try { $key = Get-PlaybookKeyForFile -Path $Path }
-    catch { throw "'$OriginalName' is not a recognized playbook working file (no Tier 1 / Tier 0 / Email Security sheet)" }
+    catch { throw [System.ArgumentException]::new("'$OriginalName' is not a recognized playbook working file (no Tier 1 / Tier 0 / Email Security sheet)") }
     $cfg = (Get-PlaybookConfig)[$key]
     # no @() here: Import-Playbook comma-returns its array as a single item,
     # so @() would nest it one level deep and break the count
     $policies = Import-Playbook -Path $Path -PlaybookKey $key
-    if (-not $policies.Count) { throw "No policies found in '$OriginalName' - not a $($cfg.ShortName) working file?" }
+    if (-not $policies.Count) { throw [System.ArgumentException]::new("No policies found in '$OriginalName' - not a $($cfg.ShortName) working file?") }
 
     $safe = ConvertTo-SafeClientName $ClientName
     $clientDir = Join-Path (Get-ClientsPath) $safe
