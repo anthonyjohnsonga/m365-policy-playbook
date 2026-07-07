@@ -634,6 +634,28 @@ function Import-ClientFile {
             Remove-Item -Path $f.FullName -Force
             $replaced.Add($f.Name)
         }
+        # Legacy layout too: flat .xlsx directly under data\clients (saved
+        # before per-client subfolders existed) would otherwise survive as a
+        # stale second "current" file under the Resume list's "Other" group.
+        # A flat file belongs to this client if its own _meta says so (files
+        # the app saved always carry one); the filename's first segment is the
+        # fallback, mirroring how Open-Engagement infers a meta-less client.
+        foreach ($f in (Get-ChildItem (Get-ClientsPath) -Filter *.xlsx -File -ErrorAction SilentlyContinue)) {
+            try {
+                $fk = Get-PlaybookKeyForFile -Path $f.FullName
+                if ($fk -ne $key) { continue }
+                $flatClient = ($f.BaseName -split '_')[0]
+                if ((Get-ExcelSheetInfo -Path $f.FullName).Name -contains '_meta') {
+                    $mc = (Import-Excel -Path $f.FullName -WorksheetName '_meta' |
+                           Where-Object Key -eq 'ClientName').Value
+                    if ($mc) { $flatClient = [string]$mc }
+                }
+            } catch { continue }
+            if ((ConvertTo-SafeClientName $flatClient) -ne $safe) { continue }
+            Backup-ExcelFile -Path $f.FullName -Keep 15
+            Remove-Item -Path $f.FullName -Force
+            $replaced.Add($f.Name)
+        }
         Move-Item -Path $staged -Destination $target -Force
     }
     catch { Remove-Item -Path $staged -Force -ErrorAction SilentlyContinue; throw }
