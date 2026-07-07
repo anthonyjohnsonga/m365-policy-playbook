@@ -615,17 +615,28 @@ function Import-ClientFile {
     if ($OriginalName -match '_(\d{8})\.xlsx$') { $stamp = $Matches[1] }
     $target = Join-Path $clientDir ("{0}_{1}_{2}.xlsx" -f $safe, $cfg.ShortName.Replace(' ',''), $stamp)
 
-    # Replace this playbook's existing file(s), whatever their date stamps.
-    # Workbooks that aren't recognizable playbook files are left alone.
+    # Stage the incoming file inside the client folder FIRST: the copy is the
+    # step that can genuinely fail (disk full, AV lock), and it must fail while
+    # the old working file still exists. The '.importing' suffix keeps it out
+    # of every *.xlsx listing; after the replace loop the swap is a same-volume
+    # rename. A crash in between leaves only a harmless stray '.importing'
+    # file, overwritten by the next import.
+    $staged = "$target.importing"
+    Copy-Item -Path $Path -Destination $staged -Force
     $replaced = New-Object System.Collections.Generic.List[string]
-    foreach ($f in (Get-ChildItem $clientDir -Filter *.xlsx -File -ErrorAction SilentlyContinue)) {
-        try { $fk = Get-PlaybookKeyForFile -Path $f.FullName } catch { continue }
-        if ($fk -ne $key) { continue }
-        Backup-ExcelFile -Path $f.FullName -Keep 15
-        Remove-Item -Path $f.FullName -Force
-        $replaced.Add($f.Name)
+    try {
+        # Replace this playbook's existing file(s), whatever their date stamps.
+        # Workbooks that aren't recognizable playbook files are left alone.
+        foreach ($f in (Get-ChildItem $clientDir -Filter *.xlsx -File -ErrorAction SilentlyContinue)) {
+            try { $fk = Get-PlaybookKeyForFile -Path $f.FullName } catch { continue }
+            if ($fk -ne $key) { continue }
+            Backup-ExcelFile -Path $f.FullName -Keep 15
+            Remove-Item -Path $f.FullName -Force
+            $replaced.Add($f.Name)
+        }
+        Move-Item -Path $staged -Destination $target -Force
     }
-    Copy-Item -Path $Path -Destination $target -Force
+    catch { Remove-Item -Path $staged -Force -ErrorAction SilentlyContinue; throw }
 
     # Re-tag the internal client name — but only when it genuinely differs
     # (same client saved under a slightly different name on the other machine).
