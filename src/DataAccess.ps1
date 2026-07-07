@@ -577,6 +577,99 @@ function Save-Engagement {
     return $target
 }
 
+# --- Import a working file saved by another install ---------------------------
+#  Brings a client file created elsewhere (e.g. the desktop app on a work PC)
+#  into this instance's data\clients tree so existing engagement work doesn't
+#  have to be re-entered. The playbook is detected from the workbook itself
+#  (the same check Open-Engagement relies on) and the file is validated by
+#  fully parsing its policies BEFORE anything in the client folder is touched.
+#  The import then normalizes: the file is renamed to the standard
+#  '<Client>_<Playbook>_<yyyyMMdd>.xlsx' convention and its _meta client name
+#  is re-tagged to the target client, so the header, reports, and companion
+#  lookup all match the client it now belongs to. An existing file for the
+#  same playbook is replaced — snapshotted to _backups first, unthrottled,
+#  because this backup guards a delete — leaving the client with exactly one
+#  working file per playbook.
+function Import-ClientFile {
+    param(
+        [Parameter(Mandatory)][string]$Path,          # staged upload (temp copy)
+        [Parameter(Mandatory)][string]$ClientName,
+        [string]$OriginalName = ''
+    )
+    # Surface the uploaded file's name in errors, not the staging temp path.
+    try { $key = Get-PlaybookKeyForFile -Path $Path }
+    catch { throw "'$OriginalName' is not a recognized playbook working file (no Tier 1 / Tier 0 / Email Security sheet)" }
+    $cfg = (Get-PlaybookConfig)[$key]
+    # no @() here: Import-Playbook comma-returns its array as a single item,
+    # so @() would nest it one level deep and break the count
+    $policies = Import-Playbook -Path $Path -PlaybookKey $key
+    if (-not $policies.Count) { throw "No policies found in '$OriginalName' - not a $($cfg.ShortName) working file?" }
+
+    $safe = ConvertTo-SafeClientName $ClientName
+    $clientDir = Join-Path (Get-ClientsPath) $safe
+    if (-not (Test-Path $clientDir)) { New-Item -ItemType Directory -Path $clientDir -Force | Out-Null }
+
+    # Keep the date stamp from the uploaded name when it follows the app's
+    # convention (it reflects when the work was created); otherwise use today.
+    $stamp = Get-Date -Format 'yyyyMMdd'
+    if ($OriginalName -match '_(\d{8})\.xlsx$') { $stamp = $Matches[1] }
+    $target = Join-Path $clientDir ("{0}_{1}_{2}.xlsx" -f $safe, $cfg.ShortName.Replace(' ',''), $stamp)
+
+    # Replace this playbook's existing file(s), whatever their date stamps.
+    # Workbooks that aren't recognizable playbook files are left alone.
+    $replaced = New-Object System.Collections.Generic.List[string]
+    foreach ($f in (Get-ChildItem $clientDir -Filter *.xlsx -File -ErrorAction SilentlyContinue)) {
+        try { $fk = Get-PlaybookKeyForFile -Path $f.FullName } catch { continue }
+        if ($fk -ne $key) { continue }
+        Backup-ExcelFile -Path $f.FullName -Keep 15
+        Remove-Item -Path $f.FullName -Force
+        $replaced.Add($f.Name)
+    }
+    Copy-Item -Path $Path -Destination $target -Force
+
+    # Re-tag the internal client name — but only when it genuinely differs
+    # (same client saved under a slightly different name on the other machine).
+    # A safe-name match keeps the file's original pretty name, since client
+    # folders only carry the sanitized form. Files WITHOUT a _meta sheet get a
+    # minimal one: otherwise Open-Engagement infers the client from the
+    # filename's first underscore-segment, which mangles multi-word names.
+    $pkg = Open-ExcelPackage -Path $target
+    try {
+        $changed = $false
+        $meta = $pkg.Workbook.Worksheets['_meta']
+        if (-not $meta) {
+            $meta = $pkg.Workbook.Worksheets.Add('_meta')
+            $meta.Cells[1,1].Value = 'Key';        $meta.Cells[1,2].Value = 'Value'
+            $meta.Cells[2,1].Value = 'ClientName'; $meta.Cells[2,2].Value = $ClientName
+            $meta.Cells[3,1].Value = 'Playbook';   $meta.Cells[3,2].Value = $key
+            $meta.Hidden = [OfficeOpenXml.eWorkSheetHidden]::Hidden
+            $changed = $true
+        }
+        elseif ($meta.Dimension) {
+            for ($r = 2; $r -le $meta.Dimension.End.Row; $r++) {
+                if ([string]$meta.Cells[$r,1].Value -ne 'ClientName') { continue }
+                $current = [string]$meta.Cells[$r,2].Value
+                if ((ConvertTo-SafeClientName $current) -ne $safe) {
+                    $meta.Cells[$r,2].Value = $ClientName
+                    $changed = $true
+                }
+                break
+            }
+        }
+        if ($changed) { Close-ExcelPackage $pkg } else { Close-ExcelPackage $pkg -NoSave }
+    }
+    catch { Close-ExcelPackage $pkg -NoSave; throw }
+
+    [pscustomobject]@{
+        Client       = $ClientName
+        Playbook     = $key
+        PlaybookName = $cfg.ShortName
+        File         = (Split-Path $target -Leaf)
+        Policies     = $policies.Count
+        Replaced     = @($replaced)
+    }
+}
+
 # --- Admin: edit the master playbook -----------------------------------------
 #  Adding a policy to a master flows into every NEW engagement (which copies the
 #  master). Existing client files are independent snapshots and are unaffected.

@@ -172,6 +172,44 @@ Start-PodeServer -Browse:$Browse {
         Write-PodeJsonResponse -Value @{ ok=$true }
     }
 
+    # ---- import a saved working file (upload from another install) ----
+    #  multipart/form-data with a 'clientName' text field and one 'file' upload
+    #  per request — the UI loops over multi-selected files and aggregates the
+    #  results. The upload is staged to a temp path (always cleaned up) and
+    #  validated/placed by Import-ClientFile. If the import replaced the file
+    #  behind the currently open engagement, that engagement is closed so its
+    #  in-memory copy can't autosave the replaced data back over the import.
+    Add-PodeRoute -Method Post -Path '/api/import' -ScriptBlock {
+        $client = ([string]$WebEvent.Data['clientName']).Trim()
+        $orig   = [string]$WebEvent.Data['file']
+        if (-not $client) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='clientName required' }; return }
+        if (-not $orig -or -not $WebEvent.Files.ContainsKey($orig)) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no file uploaded' }; return }
+        if ([IO.Path]::GetExtension($orig).ToLower() -ne '.xlsx') { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='only .xlsx working files can be imported' }; return }
+        $tmp = Join-Path ([IO.Path]::GetTempPath()) ("playbook_import_{0}.xlsx" -f ([guid]::NewGuid().ToString('N')))
+        try {
+            $WebEvent.Files[$orig].Save($tmp)
+            $res = Import-ClientFile -Path $tmp -ClientName $client -OriginalName $orig
+
+            $closedActive = $false
+            $eng = Get-PodeState -Name 'eng'
+            if ($eng -and $eng.SourceFile) {
+                $engLeaf = Split-Path $eng.SourceFile -Leaf
+                $engDir  = Split-Path (Split-Path $eng.SourceFile -Parent) -Leaf
+                if ($engDir -eq (ConvertTo-SafeClientName $client) -and
+                    ($engLeaf -eq $res.File -or $engLeaf -in @($res.Replaced))) {
+                    Set-PodeState -Name 'eng' -Value $null | Out-Null
+                    $closedActive = $true
+                }
+            }
+            Write-PodeJsonResponse -Value @{
+                ok=$true; client=$res.Client; playbook=$res.PlaybookName; file=$res.File
+                policies=$res.Policies; replaced=@($res.Replaced); closedActive=$closedActive
+            }
+        }
+        catch { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error="$($_.Exception.Message)" } }
+        finally { Remove-Item -Path $tmp -Force -ErrorAction SilentlyContinue }
+    }
+
     # ---- policies ----
     Add-PodeRoute -Method Get -Path '/api/policies' -ScriptBlock {
         $eng = Get-PodeState -Name 'eng'
