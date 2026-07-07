@@ -569,6 +569,8 @@ function Save-Engagement {
         }
         Set-ColumnWidthByContent $dws
 
+        Update-TrendSheet -Package $pkg -Engagement $Engagement
+
         Close-ExcelPackage $pkg
     }
     catch { Close-ExcelPackage $pkg -NoSave; throw }
@@ -842,6 +844,58 @@ function Get-PolicyDueState {
         if ($days -le 7) { return 'soon' }
     }
     return ''
+}
+
+# --- Progress trend snapshots --------------------------------------------------
+#  Every save maintains a hidden '_trend' sheet in the client working file: one
+#  compact row per calendar day (a same-day resave updates that day's row, so
+#  the day's LAST save wins). The history therefore travels with the file —
+#  copies, imports, and email attachments keep it — and powers the timeline
+#  burn-up, the "since last meeting" delta, and the report trend section.
+#  Best-effort by design: a trend hiccup must never fail a save.
+function Update-TrendSheet {
+    param([Parameter(Mandatory)]$Package, [Parameter(Mandatory)]$Engagement)
+    try {
+        $sum = Get-EngagementSummary $Engagement
+        $dev = Get-DeviceSummary $Engagement
+        $ws = $Package.Workbook.Worksheets['_trend']
+        if (-not $ws) {
+            $ws = $Package.Workbook.Worksheets.Add('_trend')
+            $hdr = @('Date','Pct','Done','Total','Overdue','DevicesPct')
+            for ($c = 0; $c -lt $hdr.Count; $c++) { $ws.Cells[1, ($c+1)].Value = $hdr[$c] }
+            $ws.Hidden = [OfficeOpenXml.eWorkSheetHidden]::Hidden
+        }
+        $today = Get-Date -Format 'yyyy-MM-dd'
+        $row = if ($ws.Dimension) { $ws.Dimension.End.Row } else { 1 }
+        if ($row -lt 2 -or [string]$ws.Cells[$row,1].Value -ne $today) { $row++ }
+        $ws.Cells[$row,1].Value = $today
+        $ws.Cells[$row,2].Value = $sum.Pct
+        $ws.Cells[$row,3].Value = $sum.Done
+        $ws.Cells[$row,4].Value = $sum.Total
+        $ws.Cells[$row,5].Value = $sum.Overdue
+        $ws.Cells[$row,6].Value = $(if ($dev.total) { $dev.pct } else { $null })
+    } catch { }
+}
+
+#  Read the trend rows back (oldest first). Empty for never-saved engagements
+#  and for files from before this feature existed. Emits rows through the
+#  pipeline (NO comma-return): every caller wraps the call in @(...), which
+#  would nest a comma-returned array one level deep and break .Count.
+function Get-TrendRows {
+    param([Parameter(Mandatory)][string]$Path)
+    if (-not (Test-Path $Path)) { return }
+    if ((Get-ExcelSheetInfo -Path $Path).Name -notcontains '_trend') { return }
+    foreach ($r in (Import-Excel -Path $Path -WorksheetName '_trend')) {
+        if (-not $r.Date) { continue }
+        [pscustomobject]@{
+            date    = [string]$r.Date
+            pct     = [int]$r.Pct
+            done    = [int]$r.Done
+            total   = [int]$r.Total
+            overdue = [int]$r.Overdue
+            devicesPct = if ($null -ne $r.DevicesPct -and "$($r.DevicesPct)" -ne '') { [int]$r.DevicesPct } else { $null }
+        }
+    }
 }
 
 # --- Progress summary --------------------------------------------------------

@@ -107,6 +107,37 @@ function Build-ReportHtml {
  </div>
 "@)
 
+    # Progress over time (per-day save snapshots from the file's _trend sheet;
+    # the burn-up needs at least two sessions, so the section is skipped for
+    # brand-new or never-saved engagements)
+    $trend = @()
+    if ($Engagement.SourceFile) { $trend = @(Get-TrendRows -Path $Engagement.SourceFile) }
+    if ($trend.Count -ge 2) {
+        $last = $trend[-1]; $prev = $trend[-2]
+        $delta = $last.pct - $prev.pct
+        $dTxt = if ($delta -gt 0) { "up <b>$delta points</b>" }
+                elseif ($delta -lt 0) { "down <b>$([math]::Abs($delta)) points</b>" }
+                else { 'unchanged' }
+        [void]$sb.Append("<h2>Progress Over Time</h2><div class='sub'>$($last.pct)% complete as of $(HtmlEnc $last.date) &mdash; $dTxt since the previous session ($(HtmlEnc $prev.date), $($prev.pct)%).</div>")
+        # Hand-rolled SVG burn-up; integer coordinates so the markup is
+        # culture-proof (no decimal separators).
+        $W = 940; $H = 120; $PX = 8; $PY = 10
+        $n = $trend.Count
+        $pts = for ($i = 0; $i -lt $n; $i++) {
+            $x = [int][math]::Round($PX + $i * ($W - 2*$PX) / ($n - 1))
+            $y = [int][math]::Round($H - $PY - ($trend[$i].pct / 100) * ($H - 2*$PY))
+            "$x,$y"
+        }
+        $ptStr = $pts -join ' '
+        [void]$sb.Append("<svg width='100%' viewBox='0 0 $W $H' role='img' aria-label='Completion percentage across sessions'>")
+        [void]$sb.Append("<polygon points='$PX,$($H-$PY) $ptStr $($W-$PX),$($H-$PY)' fill='#FBEEE1'/>")
+        [void]$sb.Append("<polyline points='$ptStr' fill='none' stroke='#E2711D' stroke-width='2'/>")
+        for ($i = 0; $i -lt $n; $i++) {
+            [void]$sb.Append("<circle cx='$(($pts[$i] -split ',')[0])' cy='$(($pts[$i] -split ',')[1])' r='3' fill='#C25E12'><title>$(HtmlEnc $trend[$i].date): $($trend[$i].pct)%</title></circle>")
+        }
+        [void]$sb.Append("</svg><div class='sub'>$(HtmlEnc $trend[0].date) &rarr; $(HtmlEnc $last.date) &middot; $n sessions</div>")
+    }
+
     # Progress by section
     [void]$sb.Append('<h2>Progress by Section</h2><table><tr><th>Section</th><th>Done</th><th>Total</th><th style="width:160px">Progress</th></tr>')
     foreach ($s in $sum.Sections) {
@@ -215,6 +246,17 @@ function Export-ReportExcel {
                           @{n='At Goal';e={ if ($_.Current -eq $dev.target) { 'Yes' } else { '' } }},
                           Status,Notes |
             Export-Excel -Path $OutPath -WorksheetName 'Devices' -TableStyle Medium2 -FreezeTopRow
+    }
+
+    # Session-over-session trend (skipped when the engagement has no history yet)
+    $trendRows = @()
+    if ($Engagement.SourceFile) { $trendRows = @(Get-TrendRows -Path $Engagement.SourceFile) }
+    if ($trendRows.Count) {
+        $trendRows |
+            Select-Object @{n='Date';e={$_.date}}, @{n='% Complete';e={$_.pct}},
+                          @{n='Done';e={$_.done}}, @{n='Total';e={$_.total}},
+                          @{n='Overdue';e={$_.overdue}}, @{n='Devices %';e={$_.devicesPct}} |
+            Export-Excel -Path $OutPath -WorksheetName 'Trend' -TableStyle Medium2
     }
 
     # Size every sheet's columns in one pass (-AutoSize is unusable here: it

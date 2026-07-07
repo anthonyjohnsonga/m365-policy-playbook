@@ -325,6 +325,17 @@ Start-PodeServer -Browse:$Browse {
         Write-PodeJsonResponse -Value (Get-Timeline $eng)
     }
 
+    # ---- progress trend (per-day snapshots from the file's _trend sheet) ----
+    Add-PodeRoute -Method Get -Path '/api/trend' -ScriptBlock {
+        $eng = Get-PodeState -Name 'eng'
+        if (-not $eng) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no engagement' }; return }
+        try {
+            $rows = @()
+            if ($eng.SourceFile -and (Test-Path $eng.SourceFile)) { $rows = @(Get-TrendRows -Path $eng.SourceFile) }
+            Write-PodeJsonResponse -Value @{ rows = @($rows) }
+        } catch { Set-PodeResponseStatus -Code 500 -NoErrorPage; Write-PodeJsonResponse -Value @{ error="$($_.Exception.Message)" } }
+    }
+
     # ---- set project / phase schedule ----
     Add-PodeRoute -Method Post -Path '/api/project' -ScriptBlock {
         $d = $WebEvent.Data

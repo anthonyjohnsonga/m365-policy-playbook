@@ -24,6 +24,7 @@ and hand over a polished status report — all from a local web app.
 - 🔎 **Impact filter & search** — jump straight to the "users will notice this" items to pre-brief clients.
 - 📊 **Live tracking** — Status / Date / Tech / Notes per policy, with overall and per-section progress rings that update as you go.
 - 💾 **Saves to Excel** — a per-client working file you can re-open later, email, or back up.
+- 📈 **Meeting-over-meeting trend** — every save snapshots progress into the working file; the timeline shows a burn-up ("+25 pts since last session") and reports include the progress-over-time story.
 - 📄 **One-click reports** — **View** (HTML), **Download Excel**, or **Download PDF**: status summary, per-section progress, a user-impact briefing, and a phased rollout timeline.
 - 🖥️ **Three ways to run** — Windows, macOS, or Docker.
 - 🔒 **Stays on your machine** — nothing is installed on the client tenant and nothing leaves your computer.

@@ -408,6 +408,21 @@ code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
 .mactions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:20px}
 .mactions .hint{margin-top:0}
 
+/* ---- progress trend (timeline view) ---- */
+.trend-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 14px}
+.trend-head{display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+.trend-title{font-weight:700;font-size:13px}
+.trend-delta{font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px}
+.trend-delta.up{background:var(--low-bg);color:var(--low)}
+.trend-delta.down{background:var(--hi-bg);color:var(--high)}
+.trend-delta.flat{background:var(--chipbg);color:var(--muted)}
+.trend-now{margin-left:auto;font-size:12px;color:var(--muted);font-weight:600}
+.trend-svg{width:100%;height:auto;display:block}
+.trend-line{fill:none;stroke:var(--brand2);stroke-width:2;stroke-linejoin:round}
+.trend-area{fill:var(--brandlt);stroke:none}
+.trend-dots circle{fill:var(--brand2)}
+.trend-axis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px}
+
 /* ---- import saved files ---- */
 .mform #impClientNew{margin-top:8px}
 .imp-results{margin-top:14px;max-height:180px;overflow:auto}

@@ -8,8 +8,14 @@ import { jumpToPolicy } from './companion.js';
 export async function renderTimeline(){
   const tl = $('#timeline');
   tl.innerHTML = '<div class="empty">Loading timeline...</div>';
-  let data;
-  try{ data = await api('/api/timeline'); }
+  let data, trend;
+  try{
+    // Trend is decorative — never let it break the timeline.
+    [data, trend] = await Promise.all([
+      api('/api/timeline'),
+      api('/api/trend').catch(() => ({rows: []}))
+    ]);
+  }
   catch(e){ tl.innerHTML = `<div class="empty">${enc(e.message)}</div>`; return; }
 
   const proj = data.project || {start:'', end:''};
@@ -63,6 +69,8 @@ export async function renderTimeline(){
     html += `<div class="sched-hint">Set a project <b>start</b> and <b>end</b> date to build the schedule — the three phases auto-distribute across the window, and you can fine-tune each one below or set a planned date on individual policies.</div>`;
   }
   html += `</div>`;
+
+  html += trendHtml((trend && trend.rows) || []);
 
   const rank = {high:0, medium:1, low:2, none:3};
   html += data.phases.map(ph => {
@@ -124,6 +132,43 @@ export async function renderTimeline(){
 
   tl.innerHTML = html;
   wireTimeline();
+}
+
+/* Burn-up card: one point per saved day (from the file's hidden _trend sheet),
+   with the meeting-over-meeting delta. Rendered as a hand-rolled SVG polyline —
+   no chart library, matching the app's no-dependency approach. */
+function trendHtml(rows){
+  const head = extra => `<div class="trend-card"><div class="trend-head">
+      <span class="trend-title">Progress trend</span>${extra}</div>`;
+  if(rows.length === 0){
+    return head('') + `<div class="tl-empty">Snapshots are recorded automatically each time you save — the trend appears after two saved sessions.</div></div>`;
+  }
+  if(rows.length === 1){
+    return head(`<span class="trend-now">${rows[0].pct}% on ${enc(fmtDate(rows[0].date))}</span>`)
+      + `<div class="tl-empty">First snapshot recorded — the trend line appears with your next session's save.</div></div>`;
+  }
+  const last = rows[rows.length-1], prev = rows[rows.length-2];
+  const delta = last.pct - prev.pct;
+  const cls  = delta > 0 ? 'up' : (delta < 0 ? 'down' : 'flat');
+  const dTxt = delta === 0 ? `unchanged since ${fmtDate(prev.date)}`
+    : `${delta > 0 ? '+' : ''}${delta} pts since ${fmtDate(prev.date)}`;
+
+  const W = 560, H = 120, PX = 8, PY = 10;
+  const x = i => Math.round((PX + i*(W - 2*PX)/(rows.length-1))*10)/10;
+  const y = p => Math.round((H - PY - (p/100)*(H - 2*PY))*10)/10;
+  const pts  = rows.map((r,i) => `${x(i)},${y(r.pct)}`).join(' ');
+  const dots = rows.map((r,i) =>
+    `<circle cx="${x(i)}" cy="${y(r.pct)}" r="3"><title>${enc(fmtDate(r.date))}: ${r.pct}% (${r.done}/${r.total}${r.overdue ? `, ${r.overdue} overdue` : ''})</title></circle>`).join('');
+
+  return head(`<span class="trend-delta ${cls}">${enc(dTxt)}</span>
+      <span class="trend-now">${last.pct}% &middot; ${last.done}/${last.total}</span>`) + `
+    <svg class="trend-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Completion percentage across saved sessions">
+      <polygon class="trend-area" points="${PX},${H-PY} ${pts} ${W-PX},${H-PY}"></polygon>
+      <polyline class="trend-line" points="${pts}"></polyline>
+      <g class="trend-dots">${dots}</g>
+    </svg>
+    <div class="trend-axis"><span>${enc(fmtDate(rows[0].date))}</span><span>${rows.length} sessions</span><span>${enc(fmtDate(last.date))}</span></div>
+  </div>`;
 }
 
 export function wireTimeline(){
