@@ -180,9 +180,14 @@ Start-PodeServer -Browse:$Browse {
     #  behind the currently open engagement, that engagement is closed so its
     #  in-memory copy can't autosave the replaced data back over the import.
     Add-PodeRoute -Method Post -Path '/api/import' -ScriptBlock {
-        $client = ([string]$WebEvent.Data['clientName']).Trim()
-        $orig   = [string]$WebEvent.Data['file']
+        $client  = ([string]$WebEvent.Data['clientName']).Trim()
+        $origRaw = $WebEvent.Data['file']
         if (-not $client) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='clientName required' }; return }
+        # Multiple uploads under one 'file' key arrive as an array of names —
+        # say so, instead of the misleading 'no file uploaded' that the
+        # ContainsKey check below would produce for the joined string.
+        if ($origRaw -is [System.Collections.ICollection] -and $origRaw.Count -gt 1) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='one file per request - send each file as its own upload' }; return }
+        $orig = [string]$origRaw
         if (-not $orig -or -not $WebEvent.Files.ContainsKey($orig)) { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='no file uploaded' }; return }
         if ([IO.Path]::GetExtension($orig).ToLower() -ne '.xlsx') { Set-PodeResponseStatus -Code 400 -NoErrorPage; Write-PodeJsonResponse -Value @{ error='only .xlsx working files can be imported' }; return }
         $tmp = Join-Path ([IO.Path]::GetTempPath()) ("playbook_import_{0}.xlsx" -f ([guid]::NewGuid().ToString('N')))
