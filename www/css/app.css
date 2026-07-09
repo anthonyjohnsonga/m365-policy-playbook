@@ -21,7 +21,7 @@
   --accent:#5aa7e6; --accent-bg:#15293a;
 }
 [data-theme="dark"] .navcount{background:rgba(255,255,255,.10)}
-[data-theme="dark"] .btn:hover{border-color:#475063}
+[data-theme="dark"] .btn:hover,[data-theme="dark"] .chip:hover{border-color:#475063}
 
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
