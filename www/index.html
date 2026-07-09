@@ -192,7 +192,10 @@
     </div>
 
     <div class="filters">
-      <input id="search" type="text" placeholder="Search policies...">
+      <div class="searchwrap">
+        <input id="search" type="text" placeholder="Search policies...">
+        <button id="searchClear" class="search-clear hidden" type="button" aria-label="Clear search" title="Clear search">&times;</button>
+      </div>
       <div class="chiprow" id="impactFilter">
         <button class="chip active" data-impact="all">All impact</button>
         <button class="chip" data-impact="high">High</button>

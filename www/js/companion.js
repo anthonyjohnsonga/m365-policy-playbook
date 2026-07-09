@@ -3,7 +3,7 @@ import { $, $$, enc } from './dom.js';
 import { state } from './state.js';
 import { api } from './api.js';
 import { fmtDate, statusClass } from './format.js';
-import { renderNav } from './policies.js';
+import { renderNav, clearSearch } from './policies.js';
 import { setView } from './views.js';
 
 export async function renderCompanion(){
@@ -48,8 +48,7 @@ export async function renderCompanion(){
 }
 
 export function jumpToPolicy(id, section){
-  state.impact='all'; state.search=''; state.searchRaw='';
-  $('#search').value='';
+  state.impact='all'; clearSearch();
   $$('#impactFilter .chip').forEach(x => x.classList.toggle('active', x.dataset.impact==='all'));
   if(section) state.section = section;
   renderNav();

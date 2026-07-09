@@ -43,6 +43,14 @@ export function updateAttnToggle(sum){
   btn.classList.toggle('active', state.attention);
 }
 
+// Reset the search box + state and hide its clear (×) button. Shared by the ×
+// button, the "All impact" chip, section-nav clicks and companion jump-to.
+export function clearSearch(){
+  state.search = ''; state.searchRaw = '';
+  const inp = $('#search'); if(inp) inp.value = '';
+  const btn = $('#searchClear'); if(btn) btn.classList.add('hidden');
+}
+
 export function renderNav(){
   const nav = $('#sectionNav');
   nav.innerHTML = sections().map(sec => {
@@ -54,6 +62,9 @@ export function renderNav(){
        <span class="navcount">${pct}% &middot; ${n}</span></div>`;
   }).join('');
   $$('#sectionNav .navitem').forEach(it => it.onclick = () => {
+    // Picking a section exits search mode; otherwise the cross-section search
+    // results keep overriding the section and the click appears to do nothing.
+    clearSearch();
     state.section = it.dataset.sec; renderNav(); setView('checklist');
   });
 }

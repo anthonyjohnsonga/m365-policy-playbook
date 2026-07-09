@@ -9,7 +9,7 @@ import { initSettings } from './settings.js';
 import { initMaster } from './master.js';
 import { initImport } from './import.js';
 import { initConfigure } from './configure.js';
-import { applySummary, loadPolicies, renderCards } from './policies.js';
+import { applySummary, loadPolicies, renderCards, clearSearch } from './policies.js';
 import { setupBulk, updateBulkCount } from './bulk.js';
 import { setView, wireViews } from './views.js';
 
@@ -165,10 +165,19 @@ function wireTop(){
     menu.querySelectorAll('.dropdown a').forEach(a => a.addEventListener('click', () => menu.classList.remove('open')));
     document.addEventListener('click', e => { if(!menu.contains(e.target)) menu.classList.remove('open'); });
   }
-  $('#search').oninput = e => { state.searchRaw = e.target.value; state.search = e.target.value.toLowerCase(); renderCards(); };
+  $('#search').oninput = e => {
+    state.searchRaw = e.target.value; state.search = e.target.value.toLowerCase();
+    $('#searchClear').classList.toggle('hidden', !e.target.value);
+    renderCards();
+  };
+  $('#searchClear').onclick = () => { clearSearch(); $('#search').focus(); renderCards(); };
   $$('#impactFilter .chip').forEach(c => c.onclick = () => {
     $$('#impactFilter .chip').forEach(x=>x.classList.remove('active'));
-    c.classList.add('active'); state.impact = c.dataset.impact; renderCards();
+    c.classList.add('active'); state.impact = c.dataset.impact;
+    // "All impact" while a search is active means "show me everything again",
+    // so drop the search term too; High/Med/Low keep narrowing within results.
+    if(state.impact==='all') clearSearch();
+    renderCards();
   });
   const attn = $('#attnToggle');
   if(attn) attn.onclick = () => {

@@ -100,8 +100,11 @@ code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
 .dot.high{background:var(--high)} .dot.medium{background:var(--med)} .dot.low{background:var(--low)}
 
 .filters{padding:0 14px 12px;border-bottom:1px solid var(--line)}
-#search{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:13px;background:var(--ctl);color:var(--ink);transition:border-color .16s ease,box-shadow .16s ease}
+.searchwrap{position:relative}
+#search{width:100%;padding:10px 32px 10px 12px;border:1px solid var(--line);border-radius:9px;font-size:13px;background:var(--ctl);color:var(--ink);transition:border-color .16s ease,box-shadow .16s ease}
 #search:focus{outline:none;border-color:var(--brand2);box-shadow:0 0 0 3px var(--brandlt)}
+.search-clear{position:absolute;right:5px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--muted);font-size:16px;line-height:1;padding:4px 7px;border-radius:6px;cursor:pointer}
+.search-clear:hover{color:var(--ink);background:var(--ctl-hover)}
 .chiprow{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
 .chip{border:1px solid var(--line);background:var(--ctl);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:background .16s ease,border-color .16s ease,color .16s ease,box-shadow .16s ease}
 .chip:hover{color:var(--ink);background:var(--ctl-hover);border-color:#cbd5e1}
