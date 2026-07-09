@@ -108,7 +108,8 @@ code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
 
 .filters{padding:0 14px 12px;border-bottom:1px solid var(--line)}
 .searchwrap{position:relative}
-#search{width:100%;padding:10px 32px 10px 12px;border:1px solid var(--line);border-radius:9px;font-size:13px;background:var(--ctl);color:var(--ink);transition:border-color .16s ease,box-shadow .16s ease}
+.search-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--muted);pointer-events:none}
+#search{width:100%;padding:10px 32px;border:1px solid var(--line);border-radius:9px;font-size:13px;background:var(--ctl);color:var(--ink);transition:border-color .16s ease,box-shadow .16s ease}
 #search:focus{outline:none;border-color:var(--brand2);box-shadow:0 0 0 3px var(--brandlt)}
 .search-clear{position:absolute;right:5px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--muted);font-size:16px;line-height:1;padding:4px 7px;border-radius:6px;cursor:pointer}
 .search-clear:hover{color:var(--ink);background:var(--ctl-hover)}
