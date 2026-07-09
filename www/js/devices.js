@@ -47,7 +47,11 @@ export async function renderDevices(){
    </div>`;
 
   if(!data.devices.length){
-    html += `<div class="empty">No devices yet. Paste a list of names above, or import a CSV.</div>`;
+    html += `<div class="empty">
+      <svg class="empty-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="2" y1="19" x2="22" y2="19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <div class="empty-title">No devices yet</div>
+      <div class="empty-hint">Paste a list of names above, or import a CSV.</div>
+    </div>`;
   } else {
     const rows = data.devices.map(d => {
       const osOpts  = DEV_OS.map(o=>`<option ${o===d.OS?'selected':''}>${o}</option>`).join('');

@@ -101,7 +101,7 @@ export function renderCards(){
   head.innerHTML = `<h2>${state.search ? 'Search results' : enc(state.section||'')}</h2>
      <div class="meta">${list.length} ${state.impact==='all'?'':state.impact+' impact '}policies${state.search?` matching "${enc(state.searchRaw)}" across all sections`:''}</div>`;
   const cards = $('#cards');
-  if(!list.length){ cards.innerHTML = '<div class="empty">No policies match the current filter.</div>'; return; }
+  if(!list.length){ renderEmptyCards(cards); return; }
 
   cards.innerHTML = list.map(p => {
     const opts = state.statusOptions.map(o =>
@@ -154,6 +154,33 @@ export function renderCards(){
     });
   });
   updateBulkCount();
+}
+
+// Structured empty state for the checklist: names the filters that caused it
+// and offers a one-click reset back to defaults (search + impact + attention).
+function renderEmptyCards(cards){
+  const filters = [];
+  if(state.search) filters.push(`search "${state.searchRaw}"`);
+  if(state.impact !== 'all') filters.push(`${state.impact} impact`);
+  if(state.attention) filters.push('needs attention');
+  const hint = filters.length
+    ? `Nothing ${state.search ? 'in any section' : 'in this section'} matches ${filters.join(' + ')}.`
+    : 'This section has no policies.';
+  cards.innerHTML = `<div class="empty">
+    <svg class="empty-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="15.3" y1="15.3" x2="21" y2="21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="7.8" y1="10.5" x2="13.2" y2="10.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <div class="empty-title">No policies match</div>
+    <div class="empty-hint">${enc(hint)}</div>
+    ${filters.length ? '<button type="button" id="emptyReset" class="btn">Clear filters</button>' : ''}
+  </div>`;
+  const btn = $('#emptyReset');
+  if(btn) btn.onclick = () => {
+    clearSearch();
+    state.impact = 'all';
+    $$('#impactFilter .chip').forEach(x => x.classList.toggle('active', x.dataset.impact==='all'));
+    state.attention = false;
+    const at = $('#attnToggle'); if(at) at.classList.remove('active');
+    renderCards();
+  };
 }
 
 // Refresh just one card's overdue badge in place (no full list rebuild).
