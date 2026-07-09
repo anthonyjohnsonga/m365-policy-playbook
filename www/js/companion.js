@@ -55,7 +55,8 @@ export function jumpToPolicy(id, section){
   setView('checklist');
   setTimeout(()=>{
     const card = document.querySelector(`#cards .pcard[data-id="${id}"]`);
-    if(card){ card.scrollIntoView({behavior:'smooth',block:'center'});
+    const motion = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+    if(card){ card.scrollIntoView({behavior:motion,block:'center'});
       card.classList.add('flash'); setTimeout(()=>card.classList.remove('flash'),1200); }
   }, 60);
 }
