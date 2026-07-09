@@ -442,6 +442,23 @@ code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
 .trend-dots circle{fill:var(--brand2)}
 .trend-axis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px}
 
+/* ---- responsive: narrow / half-snapped windows ---- */
+@media (max-width:1100px){
+  #sidebar{width:240px}
+  #content{padding:16px 18px}
+}
+@media (max-width:860px){
+  #topbar{flex-wrap:wrap;row-gap:8px}
+  .rightbar{margin-left:auto}
+  .app{flex-direction:column}
+  #sidebar{width:100%;max-height:42vh;border-right:0;border-bottom:1px solid var(--line)}
+  #sectionNav{display:grid;grid-template-columns:1fr 1fr;gap:2px}
+  .start{padding:24px 14px}
+  .cols{flex-direction:column;gap:18px}
+  .gantt-label{width:120px}
+  .gantt-axis{margin-left:130px}
+}
+
 /* ---- import saved files ---- */
 .mform #impClientNew{margin-top:8px}
 .imp-results{margin-top:14px;max-height:180px;overflow:auto}
